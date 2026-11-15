@@ -112,13 +112,16 @@ cd ..\..
 Fuse/
 ├── Launch_Fuse.bat                  # Quiet Windows Desktop launcher
 ├── Create_Desktop_Shortcut.bat      # Generates Fuse shortcut on Desktop
+├── Build_Installer.bat              # 1-Click compiler for Fuse_Setup.exe
 ├── start.bat                        # Web browser dual-server launcher
 └── captionforge/
     ├── desktop_app.py               # Native PyWebView (Edge WebView2) desktop runner
     ├── make_icons.py                # Multi-resolution ICO & PNG generator
     ├── assets/                      # Desktop & taskbar icon files (fuse.ico, fuse.png)
+    ├── bin/                         # Bundled portable FFmpeg binaries (ffmpeg.exe, ffprobe.exe)
     ├── backend/
     │   ├── main.py                  # FastAPI REST & SSE endpoints + static file mount
+    │   ├── version.py               # Version metadata & GitHub release checker
     │   ├── transcribe.py            # Faster-Whisper offline transcription engine
     │   ├── ass_generator.py         # Word-level ASS subtitle compiler & keywording
     │   ├── styles.py                # Subtitle styling presets & typography rules
@@ -126,7 +129,7 @@ Fuse/
     │   └── jobs.py                  # Persistent job manager & disk recovery
     └── frontend/
         ├── src/                     # React + Tailwind CSS studio interface
-        │   ├── components/          # Video preview, transcript editor, export modal
+        │   ├── components/          # Video preview, transcript editor, update banner
         │   └── lib/                 # JASSUB WebAssembly subtitle renderer
         └── dist/                    # Compiled production UI bundle
 ```

@@ -29,11 +29,17 @@ from .styles import list_presets, get_preset, save_custom_preset, delete_custom_
 from .ass_generator import generate_ass_content
 from .transcribe import extract_audio_wav, transcribe_video_audio
 from .render import render_video_with_subtitles, check_nvenc_available
+from .version import APP_NAME, APP_VERSION, GITHUB_REPO
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FONTS_DIR = PROJECT_ROOT / "fonts"
 WORKSPACE_DIR = PROJECT_ROOT / "workspace"
 JASSUB_DIR = PROJECT_ROOT / "frontend" / "node_modules" / "jassub" / "dist"
+
+# Add bundled portable FFmpeg bin directory to PATH if present
+FFMPEG_BIN = PROJECT_ROOT / "bin"
+if FFMPEG_BIN.exists() and (FFMPEG_BIN / "ffmpeg.exe").exists():
+    os.environ["PATH"] = str(FFMPEG_BIN.resolve()) + os.pathsep + os.environ.get("PATH", "")
 
 app = FastAPI(
     title="CaptionForge API",
@@ -743,6 +749,74 @@ def open_file_default_app(req: Dict[str, str]):
         except Exception as e:
             return {"status": "error", "message": str(e)}
     return {"status": "not_found"}
+
+
+@app.get("/api/version")
+def get_version_info():
+    """
+    Return local app version and check GitHub Releases for updates.
+    Timeouts quietly after 3.5 seconds if offline or unreachable.
+    """
+    import re
+    import requests
+    
+    current_ver = APP_VERSION
+    response_data = {
+        "app_name": APP_NAME,
+        "current_version": current_ver,
+        "latest_version": current_ver,
+        "update_available": False,
+        "release_name": "",
+        "release_url": f"https://github.com/{GITHUB_REPO}/releases",
+        "download_url": f"https://github.com/{GITHUB_REPO}/releases/latest",
+        "published_at": None,
+        "body": ""
+    }
+
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": f"{APP_NAME}-Desktop/{current_ver}"
+        }
+        resp = requests.get(url, headers=headers, timeout=3.5)
+        if resp.status_code == 200:
+            data = resp.json()
+            tag = data.get("tag_name", "").lstrip("v")
+            if tag:
+                response_data["latest_version"] = tag
+                response_data["release_name"] = data.get("name") or f"Fuse v{tag}"
+                response_data["release_url"] = data.get("html_url") or response_data["release_url"]
+                response_data["download_url"] = data.get("html_url") or response_data["download_url"]
+                response_data["published_at"] = data.get("published_at")
+                response_data["body"] = data.get("body", "")
+
+                # Compare version numbers (e.g. "1.1.0" > "1.0.0")
+                def version_tuple(v):
+                    return [int(x) for x in re.sub(r'[^0-9.]', '', v).split('.') if x.isdigit()]
+
+                curr_parts = version_tuple(current_ver)
+                latest_parts = version_tuple(tag)
+                if latest_parts > curr_parts:
+                    response_data["update_available"] = True
+    except Exception:
+        pass
+
+    return response_data
+
+
+@app.post("/api/open-external-url")
+def open_external_url(req: Dict[str, str]):
+    """Open an external link in the user's default browser."""
+    import webbrowser
+    url = req.get("url")
+    if url and (url.startswith("http://") or url.startswith("https://")):
+        try:
+            webbrowser.open(url)
+            return {"status": "ok"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+    return {"status": "invalid_url"}
 
 
 @app.post("/api/custom-presets")

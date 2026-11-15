@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
+import UpdateBanner from './components/UpdateBanner';
 import UploadZone from './components/UploadZone';
 import TranscriptionConfig from './components/TranscriptionConfig';
 import VideoPlayerPreview from './components/VideoPlayerPreview';
@@ -575,6 +576,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background text-zinc-100 flex flex-col font-sans selection:bg-white selection:text-black">
+      <UpdateBanner />
       <Header
         status={
           isTranscribing

@@ -60,3 +60,13 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+
+# Standalone Builds & Portable Binaries
+captionforge/bin/
+bin/
+dist_installer/
+build_pyinstaller/
+dist_pyinstaller/
+*.spec
+installer.iss
+*.iss.bak

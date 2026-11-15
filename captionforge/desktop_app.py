@@ -21,6 +21,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+# Add bundled portable FFmpeg bin directory to PATH if present
+FFMPEG_BIN = PROJECT_ROOT / "bin"
+if FFMPEG_BIN.exists() and (FFMPEG_BIN / "ffmpeg.exe").exists():
+    os.environ["PATH"] = str(FFMPEG_BIN.resolve()) + os.pathsep + os.environ.get("PATH", "")
+
 import uvicorn
 import webview
 from backend.main import app
