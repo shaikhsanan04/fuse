@@ -596,8 +596,8 @@ export default function App() {
           // Step 1: Upload View
           <div className="flex-1 flex flex-col items-center justify-center py-12">
             <div className="text-center mb-8 max-w-lg">
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-3">
-                Studio-grade captions in seconds.
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent leading-tight pb-1 mb-3">
+                Studio-grade <span className="font-serif italic font-normal text-[1.12em] tracking-normal inline-block pr-0.5" style={{ fontFamily: '"Instrument Serif", serif' }}>captions</span> in seconds.
               </h1>
               <p className="text-sm text-zinc-400 leading-relaxed">
                 Turn your speech into dynamic, modern video captions. Highlight key phrases, mix typography styles, and export ready for social media.

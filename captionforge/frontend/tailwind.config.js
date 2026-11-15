@@ -23,6 +23,7 @@ export default {
       },
       fontFamily: {
         sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        serif: ['"Instrument Serif"', "Georgia", "serif"],
         mono: ["GeistMono", "JetBrains Mono", "Fira Code", "monospace"],
       },
       boxShadow: {
