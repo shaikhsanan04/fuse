@@ -1,5 +1,16 @@
 # Fuse 🎬⚡
-> **100% Offline AI Subtitle Studio & Desktop App for Windows.** Generate word-level captions, preview in real time via JASSUB WebAssembly, customize creator-grade typography presets, and export high-definition captioned videos using FFmpeg — completely free and offline.
+> **100% Offline AI Subtitle Studio & Desktop App for Windows.** Generate animated word-level captions, preview in real time via JASSUB WebAssembly, customize creator-grade typography presets, and export high-definition captioned videos using FFmpeg — completely free and offline.
+
+---
+
+## ⚡ Quick Download for Windows (No Setup Required)
+
+If you just want to use the app without installing Python, Git, Node.js, or FFmpeg:
+
+1. Go to **[Releases](https://github.com/shaikhsanan04/fuse/releases)**.
+2. Download **`Fuse_Setup.exe`**.
+3. Double-click the installer, click **Next $\rightarrow$ Install $\rightarrow$ Finish**.
+4. Launch **Fuse** directly from your Desktop or Start Menu!
 
 ---
 
@@ -27,37 +38,25 @@
   - **Quick Save to Downloads**: Instant 1-click copy directly into your Windows `Downloads` folder in milliseconds.
   - **Reveal in Explorer & Play Video**: Open the finished video in Windows File Explorer or play it in your default media player with one click.
   - **Export Formats**: Hardcoded MP4 Video, Advanced SubStation Alpha (`.ass`), and SubRip (`.srt`).
+- **🔔 Built-in Auto-Update Alerts**: Checks GitHub Releases on launch and displays a clean banner when a newer version is available.
 
 ---
 
-## 🚀 Quick Start (Running on Windows)
+## 🛠️ Developer Setup (Running from Source)
+
+If you are a developer and want to modify or run the codebase locally:
 
 ### 1. Prerequisites
-Before running Fuse from source, make sure you have:
+- **Python 3.11+** (Check *"Add Python to PATH"* during install)
+- **Node.js 18+ & npm**
+- **FFmpeg with libass** (or use the portable binaries bundled in `captionforge/bin`)
 
-1. **Python 3.11+**:
-   - Download from [python.org](https://www.python.org/downloads/).
-   - ⚠️ **Check "Add Python to PATH"** during installation.
-2. **Node.js 18+ & npm**:
-   - Download from [nodejs.org](https://nodejs.org/).
-3. **FFmpeg with libass**:
-   - Download the full build from [gyan.dev/ffmpeg/builds](https://www.gyan.dev/ffmpeg/builds/) (`ffmpeg-release-full.7z`).
-   - Extract to a folder (e.g., `C:\ffmpeg`) and add `C:\ffmpeg\bin` to your Windows Environment Variables `Path`.
-   - Verify in Command Prompt: `ffmpeg -version` (ensure `libass` is listed).
-
----
-
-### 2. Setup & Installation
-
-Clone the repository and open Command Prompt in the project folder:
-
+### 2. Clone & Install
 ```cmd
 git clone https://github.com/shaikhsanan04/fuse.git
 cd fuse
-```
 
-#### Install Backend & Desktop Dependencies:
-```cmd
+:: Setup Python virtual environment
 cd captionforge
 python -m venv .venv
 .venv\Scripts\activate
@@ -65,54 +64,52 @@ pip install -r requirements.txt
 python download_fonts.py
 python make_icons.py
 cd ..
-```
 
-#### Install & Build Frontend:
-```cmd
+:: Setup and build frontend UI
 cd captionforge\frontend
 npm install
 npm run build
 cd ..\..
 ```
 
----
-
-### 3. Launching Fuse
-
-- **Desktop Window (Recommended)**:
-  Double-click `Launch_Fuse.bat` in the root folder, or run `Create_Desktop_Shortcut.bat` to place a **Fuse** icon directly on your Windows Desktop.
-- **Web Browser Mode**:
-  If you prefer running in Chrome / Edge:
-  ```cmd
-  start.bat
-  ```
-  And navigate to `http://127.0.0.1:5173`.
+### 3. Launching
+- **Desktop Window**: Double-click `Launch_Fuse.bat` (or run `Create_Desktop_Shortcut.bat` to create a desktop shortcut).
+- **Web Browser Mode**: Double-click `start.bat` and open `http://127.0.0.1:5173`.
 
 ---
 
-## 📦 How Distribution & Installation Works for End-Users
+## 📦 Building the Standalone Installer (`Fuse_Setup.exe`)
 
-| Method | Target Audience | How It Works |
-|---|---|---|
-| **Developer / Source (Current)** | Developers, GitHub users | Clone repo, set up Python + FFmpeg, run `Launch_Fuse.bat`. |
-| **Standalone Installer (`.exe`)** | Friends & non-technical users | A single `Fuse_Setup.exe` built with PyInstaller & Inno Setup that bundles Python, FFmpeg, and the UI. Users click Next -> Finish without installing Python. |
-| **Portable Zip** | Plug-and-play users | Download and extract a pre-built folder containing `Fuse.exe`, double-click to launch immediately. |
+You can compile a self-contained 1-click installer for distribution to friends:
 
-### Are Auto-Updates Active?
-- **Currently**: Auto-updates are **off**. Pushing updates to GitHub updates the repository, but does not automatically change installed builds on other computers.
-- **Auto-Update Roadmap**:
-  - We can enable an automated GitHub Release checker: when Fuse launches, it queries `api.github.com/repos/shaikhsanan04/fuse/releases/latest`.
-  - If a newer release exists, Fuse alerts the user with a 1-click update toast.
+```cmd
+Build_Installer.bat
+```
+*(Or run `python build_installer.py`)*
+
+* Uses **PyInstaller** to bundle Python and all machine learning libraries.
+* Uses **Inno Setup 6** to package portable FFmpeg binaries, fonts, icons, and UI assets into `dist_installer/Fuse_Setup.exe` (~180 MB).
 
 ---
 
-## 🏗️ Architecture
+## 🔄 How Auto-Updates Work
+
+1. On launch, Fuse queries the GitHub Releases API (`api.github.com/repos/shaikhsanan04/fuse/releases/latest`).
+2. If a newer version tag (e.g., `v1.1.0` vs local `1.0.0`) is published on GitHub, Fuse shows an in-app banner:
+   > **`⚡ Fuse v1.1.0 is available! [Update Now] [X]`**
+3. Clicking **Update Now** opens your GitHub release download page in the user's default browser.
+4. If the user is offline, the check fails silently without blocking the app.
+
+---
+
+## 🏗️ Project Architecture
 
 ```
 Fuse/
-├── Launch_Fuse.bat                  # Quiet Windows Desktop launcher
+├── Launch_Fuse.bat                  # Desktop window launcher
 ├── Create_Desktop_Shortcut.bat      # Generates Fuse shortcut on Desktop
 ├── Build_Installer.bat              # 1-Click compiler for Fuse_Setup.exe
+├── build_installer.py               # PyInstaller + Inno Setup build pipeline
 ├── start.bat                        # Web browser dual-server launcher
 └── captionforge/
     ├── desktop_app.py               # Native PyWebView (Edge WebView2) desktop runner
