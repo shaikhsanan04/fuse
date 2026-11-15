@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import UploadZone from './components/UploadZone';
+import HowItWorks from './components/HowItWorks';
 import TranscriptionConfig from './components/TranscriptionConfig';
 import VideoPlayerPreview from './components/VideoPlayerPreview';
 import TranscriptTab from './components/tabs/TranscriptTab';
@@ -608,6 +609,9 @@ export default function App() {
               isUploading={isUploading}
               metadata={videoMetadata}
             />
+
+            {/* How It Works Section */}
+            <HowItWorks />
           </div>
         ) : !transcript ? (
           // Step 2: Configure & Transcribe View (Upload zone is hidden after uploading)
