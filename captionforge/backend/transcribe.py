@@ -142,7 +142,8 @@ def transcribe_video_audio(
                     "word": w_text,
                     "start": round(w.start, 3),
                     "end": round(w.end, 3),
-                    "probability": round(w.probability, 3)
+                    "probability": round(w.probability, 3),
+                    "emphasis": "base"
                 }
                 seg_dict["words"].append(word_entry)
                 all_words.append(word_entry)

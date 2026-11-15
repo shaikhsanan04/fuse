@@ -1,0 +1,54 @@
+{
+  "id": "custom_sherlock_shades_1y5q",
+  "name": "Sherlock Shades",
+  "icon": "✍️",
+  "description": "Custom style (Poppins + Instrument Serif)",
+  "font": "Inter",
+  "font_size_pct": 0.045,
+  "primary_color": "#FFFFFF",
+  "highlight_color": "#A8D4FF",
+  "outline_color": "#000000",
+  "outline_width_pct": 0.01,
+  "shadow_color": "#000000",
+  "shadow_depth_pct": 0.04,
+  "spacing": -4,
+  "blur": 2,
+  "editorial_top_scale": 75,
+  "editorial_hero_scale": 140,
+  "uppercase": false,
+  "animation_type": "none",
+  "roles": {
+    "base": {
+      "font": "Poppins",
+      "weight": 700,
+      "italic": false,
+      "uppercase": false,
+      "size_mult": 1,
+      "color": "#FFFFFF"
+    },
+    "accent": {
+      "font": "Instrument Serif",
+      "weight": 900,
+      "italic": true,
+      "uppercase": false,
+      "size_mult": 1.4,
+      "color": "#A8D4FF"
+    },
+    "soft": {
+      "font": "Instrument Serif",
+      "weight": 400,
+      "italic": true,
+      "uppercase": false,
+      "size_mult": 0.88,
+      "color": "#D5D5D5"
+    }
+  },
+  "grouping": {
+    "mode": "short",
+    "max_words": 4,
+    "max_chars": 26,
+    "max_pause": 0.45,
+    "vertical_margin_pct": 0.2
+  },
+  "is_custom": true
+}

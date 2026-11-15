@@ -40,9 +40,9 @@ export default function LayoutTab({
     <div className="flex flex-col h-full space-y-6 p-4 overflow-y-auto">
       {/* Chunking / Words per line */}
       <div>
-        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
+        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-3">
           <LayoutTemplate className="w-3.5 h-3.5 text-zinc-400" />
-          <span>Words Per Line Mode</span>
+          <span>Pacing & Line Length</span>
         </label>
 
         {/* Mode Selector Buttons */}
@@ -56,7 +56,7 @@ export default function LayoutTab({
             }`}
           >
             Short-form
-            <span className="block text-[10px] text-zinc-500 font-normal">1-3 words</span>
+            <span className="block text-[10px] text-zinc-500 font-normal">Reels & TikTok</span>
           </button>
 
           <button
@@ -68,7 +68,7 @@ export default function LayoutTab({
             }`}
           >
             Long-form
-            <span className="block text-[10px] text-zinc-500 font-normal">6-8 words</span>
+            <span className="block text-[10px] text-zinc-500 font-normal">YouTube & Podcasts</span>
           </button>
 
           <button
@@ -88,7 +88,7 @@ export default function LayoutTab({
         <div className="space-y-3 p-3 rounded-xl border border-zinc-800/80 bg-zinc-950/50">
           <div>
             <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-1.5">
-              <span>Max Words Per Chunk</span>
+              <span>Max Words Per Line</span>
               <span className="font-mono text-zinc-200">{layoutConfig.max_words || 3} words</span>
             </div>
             <input
@@ -122,7 +122,7 @@ export default function LayoutTab({
 
       {/* Vertical Positioning */}
       <div className="space-y-4 pt-2 border-t border-zinc-800/80">
-        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-300">
           <AlignVerticalSpaceAround className="w-3.5 h-3.5 text-zinc-400" />
           <span>Vertical Position</span>
         </label>
@@ -137,7 +137,7 @@ export default function LayoutTab({
                 : 'border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            Bottom (Reels/Shorts)
+            Bottom (Reels & TikTok)
           </button>
 
           <button
@@ -166,7 +166,7 @@ export default function LayoutTab({
         {/* Slider for exact % placement */}
         <div>
           <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-1.5">
-            <span>Vertical Margin (% from edge)</span>
+            <span>Distance From Bottom Edge</span>
             <span className="font-mono text-zinc-200">
               {Math.round((layoutConfig.vertical_margin_pct || 0.18) * 100)}%
             </span>
@@ -188,19 +188,19 @@ export default function LayoutTab({
         <div className="flex items-center gap-3">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
           <div>
-            <span className="text-xs text-zinc-200 font-medium block">TikTok / Reels Safe-Area</span>
-            <span className="text-[10px] text-zinc-500">Shows UI overlay exclusion zones</span>
+            <span className="text-xs text-zinc-200 font-medium block">Social Media Safe Area</span>
+            <span className="text-[10px] text-zinc-500">Guides for TikTok, Reels, and YouTube Shorts</span>
           </div>
         </div>
         <button
           onClick={() => setSafeAreaGuides(!safeAreaGuides)}
-          className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all ${
+          className={`px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
             safeAreaGuides
-              ? 'bg-blue-500 text-white font-medium'
-              : 'bg-zinc-800 text-zinc-400 hover:text-white'
+              ? 'bg-zinc-800 text-white border border-zinc-700'
+              : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
           }`}
         >
-          {safeAreaGuides ? 'Enabled' : 'Disabled'}
+          {safeAreaGuides ? 'Visible' : 'Hidden'}
         </button>
       </div>
     </div>

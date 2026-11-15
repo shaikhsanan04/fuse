@@ -118,6 +118,32 @@ class JobManager:
         if job and q in job.subscribers:
             job.subscribers.remove(q)
 
+    def delete_transcript(self, job_id: str) -> bool:
+        """Clear the transcript data and delete transcript.json and cached ass files."""
+        job = self.jobs.get(job_id)
+        if not job:
+            return False
+        job.transcript = None
+        job.stage = "uploaded"
+        job.progress = 0.0
+        job.message = "Transcript deleted"
+
+        t_path = self.workspace_dir / job_id / "transcript.json"
+        if t_path.exists():
+            t_path.unlink()
+        if job.ass_path and job.ass_path.exists():
+            job.ass_path.unlink()
+        return True
+
+    def delete_job(self, job_id: str) -> bool:
+        """Delete job and its workspace folder."""
+        job = self.jobs.pop(job_id, None)
+        job_dir = self.workspace_dir / job_id
+        if job_dir.exists():
+            import shutil
+            shutil.rmtree(job_dir, ignore_errors=True)
+        return True
+
 
 # Singleton manager instance initialized relative to workspace
 PROJECT_ROOT = Path(__file__).resolve().parent.parent

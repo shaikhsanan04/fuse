@@ -60,24 +60,24 @@ export default function UploadZone({ onFileSelect, isUploading, metadata }) {
           </div>
 
           <div>
-            <h3 className="text-base font-medium text-white mb-1">
-              Drag & drop your video here
+            <h3 className="text-base font-semibold text-white mb-1">
+              Upload your video
             </h3>
-            <p className="text-xs text-zinc-500">
-              Supports MP4, MOV, MKV, WebM (Short-form or Long-form)
+            <p className="text-xs text-zinc-400">
+              Drag and drop or browse files • MP4, MOV, WebM, MKV
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-400">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
             <Film className="w-3.5 h-3.5" />
-            <span>Click to browse files</span>
+            <span>Choose a video</span>
           </div>
         </div>
 
         {isUploading && (
           <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center gap-3">
             <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-            <span className="text-xs font-mono text-zinc-400">Uploading and inspecting video...</span>
+            <span className="text-xs text-zinc-300">Uploading video...</span>
           </div>
         )}
       </div>

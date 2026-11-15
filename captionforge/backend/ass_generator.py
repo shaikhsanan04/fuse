@@ -197,7 +197,7 @@ def generate_ass_content(
 
     # Build Header
     header = f"""[Script Info]
-Title: CaptionForge Subtitles
+Title: Fuse Subtitles
 ScriptType: v4.00+
 WrapStyle: 0
 ScaledBorderAndShadow: yes
@@ -217,23 +217,98 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     chunks = group_words_into_chunks(words, max_words=max_words, max_chars=max_chars, max_pause=max_pause)
     events = []
 
-    def clean_word_text(w_str: str) -> str:
-        s = str(w_str).strip()
-        if uppercase and not contains_devanagari(s):
-            s = s.upper()
-        # Escape ASS special characters { and }
-        s = s.replace("{", "(").replace("}", ")")
-        return s
+    # -------------------------------------------------------------------------
+    # Multi-Role Typography configuration (base, accent, soft)
+    # -------------------------------------------------------------------------
+    roles_cfg = overrides.get("roles") or preset.get("roles") or {}
+
+    default_base_role = {
+        "font": font_name,
+        "weight": 700 if bold_val == -1 else 400,
+        "italic": bool(italic_val == -1),
+        "uppercase": uppercase,
+        "size_mult": 1.0,
+        "color": primary_color,
+        "outline": outline_color,
+        "shadow": shadow_color
+    }
+
+    roles = {
+        "base": dict(default_base_role, **(roles_cfg.get("base") or {})),
+        "accent": dict({
+            **default_base_role,
+            "weight": 900,
+            "size_mult": 1.30,
+            "color": highlight_color
+        }, **(roles_cfg.get("accent") or {})),
+        "soft": dict({
+            **default_base_role,
+            "weight": 400,
+            "italic": True,
+            "size_mult": 0.85,
+            "color": "&H00D0D0D0"
+        }, **(roles_cfg.get("soft") or {}))
+    }
+
+    def render_role_line(
+        chunk_words: List[Dict[str, Any]],
+        active_idx: Optional[int] = None,
+        active_tags: str = "",
+        prefix_tag: str = ""
+    ) -> str:
+        """
+        Renders words with multi-role typography:
+        When a word's role differs from previous word, emits an override block:
+        {\\fn<font>\\b<weight>\\i<0|1>\\fs<size>\\c<color>&} before it,
+        and {\\r} at the end of the line.
+        """
+        if not chunk_words:
+            return ""
+
+        tokens = []
+        prev_role = None
+
+        for idx, w in enumerate(chunk_words):
+            emp = str(w.get("emphasis") or "base").lower()
+            if emp not in roles:
+                emp = "base"
+
+            r = roles[emp]
+            s = str(w.get("word", "")).strip()
+            is_upper = r.get("uppercase", uppercase)
+            if is_upper and not contains_devanagari(s):
+                s = s.upper()
+            w_text = s.replace("{", "(").replace("}", ")")
+
+            r_font = "Noto Sans Devanagari" if contains_devanagari(w_text) else r.get("font", font_name)
+            r_weight = int(r.get("weight", 700))
+            r_italic = 1 if r.get("italic") else 0
+            r_size = max(14, int(round(calculated_font_size * float(r.get("size_mult", 1.0)))))
+            r_color = hex_to_ass_color(r.get("color", primary_color))
+
+            role_override = f"\\fn{r_font}\\b{r_weight}\\i{r_italic}\\fs{r_size}\\c{r_color}&"
+
+            if idx == active_idx and active_tags:
+                tokens.append(f"{{{role_override}{active_tags}}}{w_text}")
+                prev_role = None
+            else:
+                if emp != prev_role or idx == 0:
+                    tokens.append(f"{{{role_override}}}{w_text}")
+                    prev_role = emp
+                else:
+                    tokens.append(w_text)
+
+        body = " ".join(tokens)
+        if prefix_tag:
+            return f"{prefix_tag}{body}{{\\r}}"
+        return f"{body}{{\\r}}"
 
     if animation_type == "editorial":
-        # Aesthetic Editorial: two-tier hierarchy
-        # Top tier: context words at ~75% scale
-        # Bottom tier: hero keyword at ~140% scale with active highlight color
-        # Tight tracking \fsp and soft ambient shadow \blur
         blur_val = overrides.get("blur", preset.get("blur", 2.5))
         top_scale = int(overrides.get("editorial_top_scale", 75))
         hero_scale = int(overrides.get("editorial_hero_scale", 140))
         spacing_val = int(overrides.get("spacing", preset.get("spacing", -2)))
+        blur_tag = f"{{\\blur{blur_val}\\fsp{spacing_val}}}" if blur_val else f"{{\\fsp{spacing_val}}}"
 
         for chunk in chunks:
             if not chunk:
@@ -251,6 +326,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             else:
                 split_idx = num_words - 2
 
+            top_words = chunk[:split_idx]
+            bot_words = chunk[split_idx:]
+
             for active_idx, active_word in enumerate(chunk):
                 w_start = float(active_word.get("start", chunk_start))
                 if active_idx + 1 < len(chunk):
@@ -260,38 +338,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 if w_end <= w_start:
                     w_end = w_start + 0.15
 
-                top_words = chunk[:split_idx]
-                bot_words = chunk[split_idx:]
+                top_act = active_idx if active_idx < len(top_words) else None
+                bot_act = (active_idx - len(top_words)) if active_idx >= len(top_words) else None
 
-                # Format top tier tokens
-                top_tokens = []
-                for idx, w in enumerate(top_words):
-                    w_text = clean_word_text(w.get("word", ""))
-                    if idx == active_idx:
-                        top_tokens.append(f"{{\\c{highlight_color}&}}{w_text}{{\\c{primary_color}&}}")
-                    else:
-                        top_tokens.append(w_text)
+                top_line = render_role_line(top_words, active_idx=top_act, active_tags=f"\\c{highlight_color}&")
+                bot_line = render_role_line(bot_words, active_idx=bot_act, active_tags=f"\\c{highlight_color}&")
 
-                # Format bottom tier tokens
-                bot_tokens = []
-                for b_idx, w in enumerate(bot_words):
-                    actual_idx = split_idx + b_idx
-                    w_text = clean_word_text(w.get("word", ""))
-                    if actual_idx == active_idx:
-                        bot_tokens.append(f"{{\\c{highlight_color}&}}{w_text}{{\\c{primary_color}&}}")
-                    else:
-                        bot_tokens.append(w_text)
-
-                blur_tag = f"{{\\blur{blur_val}\\fsp{spacing_val}}}" if blur_val else f"{{\\fsp{spacing_val}}}"
-
-                if top_tokens and bot_tokens:
-                    top_part = f"{{\\fscx{top_scale}\\fscy{top_scale}}}{' '.join(top_tokens)}"
-                    bot_part = f"{{\\fscx{hero_scale}\\fscy{hero_scale}}}{' '.join(bot_tokens)}"
-                    line_text = f"{blur_tag}{top_part}\\N{bot_part}"
-                elif bot_tokens:
-                    line_text = f"{blur_tag}{{\\fscx{hero_scale}\\fscy{hero_scale}}}{' '.join(bot_tokens)}"
+                if top_words and bot_words:
+                    line_text = f"{blur_tag}{{\\fscx{top_scale}\\fscy{top_scale}}}{top_line}\\N{{\\fscx{hero_scale}\\fscy{hero_scale}}}{bot_line}"
+                elif bot_words:
+                    line_text = f"{blur_tag}{{\\fscx{hero_scale}\\fscy{hero_scale}}}{bot_line}"
                 else:
-                    line_text = f"{blur_tag}{{\\fscx{top_scale}\\fscy{top_scale}}}{' '.join(top_tokens)}"
+                    line_text = f"{blur_tag}{{\\fscx{top_scale}\\fscy{top_scale}}}{top_line}"
 
                 events.append(
                     f"Dialogue: 0,{format_ass_time(w_start)},{format_ass_time(w_end)},Default,,0,0,0,,{line_text}"
@@ -306,14 +364,33 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 chunk_end = chunk_start + 0.5
 
             k_tokens = []
-            for w in chunk:
+            prev_role = None
+            for idx, w in enumerate(chunk):
                 w_start = float(w.get("start", chunk_start))
                 w_end = float(w.get("end", w_start + 0.2))
                 duration_cs = max(1, int(round((w_end - w_start) * 100)))
-                w_text = clean_word_text(w.get("word", ""))
-                k_tokens.append(f"{{\\k{duration_cs}}}{w_text}")
 
-            line_text = " ".join(k_tokens)
+                emp = str(w.get("emphasis") or "base").lower()
+                r = roles.get(emp, roles["base"])
+                s = str(w.get("word", "")).strip()
+                if r.get("uppercase", uppercase) and not contains_devanagari(s):
+                    s = s.upper()
+                w_text = s.replace("{", "(").replace("}", ")")
+
+                r_font = "Noto Sans Devanagari" if contains_devanagari(w_text) else r.get("font", font_name)
+                r_weight = int(r.get("weight", 700))
+                r_italic = 1 if r.get("italic") else 0
+                r_size = max(14, int(round(calculated_font_size * float(r.get("size_mult", 1.0)))))
+                r_color = hex_to_ass_color(r.get("color", primary_color))
+                role_tag = f"\\fn{r_font}\\b{r_weight}\\i{r_italic}\\fs{r_size}\\c{r_color}&"
+
+                if emp != prev_role or idx == 0:
+                    k_tokens.append(f"{{{role_tag}\\k{duration_cs}}}{w_text}")
+                    prev_role = emp
+                else:
+                    k_tokens.append(f"{{\\k{duration_cs}}}{w_text}")
+
+            line_text = " ".join(k_tokens) + "{\\r}"
             events.append(
                 f"Dialogue: 0,{format_ass_time(chunk_start)},{format_ass_time(chunk_end)},Default,,0,0,0,,{line_text}"
             )
@@ -326,7 +403,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             if chunk_end <= chunk_start:
                 chunk_end = chunk_start + 0.5
 
-            line_text = " ".join(clean_word_text(w.get("word", "")) for w in chunk)
+            line_text = render_role_line(chunk)
             events.append(
                 f"Dialogue: 0,{format_ass_time(chunk_start)},{format_ass_time(chunk_end)},Default,,0,0,0,,{line_text}"
             )
@@ -348,21 +425,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 if w_end <= w_start:
                     w_end = w_start + 0.15
 
-                tokens = []
-                for idx, w in enumerate(chunk):
-                    w_text = clean_word_text(w.get("word", ""))
-                    if idx == active_idx:
-                        tokens.append(f"{{\\c{highlight_color}&\\blur3}}{w_text}{{\\r}}")
-                    else:
-                        tokens.append(w_text)
-
-                line_text = " ".join(tokens)
-                # Outer blurred glow layer
-                glow_text = f"{{\\blur6\\be2\\3c{outline_color}&}}{' '.join(clean_word_text(w.get('word', '')) for w in chunk)}"
+                line_text = render_role_line(chunk, active_idx=active_idx, active_tags=f"\\c{highlight_color}&\\blur3")
+                glow_text = f"{{\\blur6\\be2\\3c{outline_color}&}}{render_role_line(chunk)}"
                 events.append(
                     f"Dialogue: 0,{format_ass_time(w_start)},{format_ass_time(w_end)},Glow,,0,0,0,,{glow_text}"
                 )
-                # Inner crisp layer
                 events.append(
                     f"Dialogue: 1,{format_ass_time(w_start)},{format_ass_time(w_end)},Default,,0,0,0,,{line_text}"
                 )
@@ -384,24 +451,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 if w_end <= w_start:
                     w_end = w_start + 0.15
 
-                tokens = []
-                for idx, w in enumerate(chunk):
-                    w_text = clean_word_text(w.get("word", ""))
-                    if idx == active_idx:
-                        tokens.append(f"{{\\fad(100,0)\\c{highlight_color}&}}{w_text}{{\\r}}")
-                    elif idx < active_idx:
-                        tokens.append(w_text)
-                    else:
-                        # Future words in chunk dim or hidden
-                        tokens.append(f"{{\\alpha&HAA&}}{w_text}{{\\r}}")
-
-                line_text = " ".join(tokens)
+                line_text = render_role_line(chunk, active_idx=active_idx, active_tags=f"\\fad(100,0)\\c{highlight_color}&")
                 events.append(
                     f"Dialogue: 0,{format_ass_time(w_start)},{format_ass_time(w_end)},Default,,0,0,0,,{line_text}"
                 )
 
     else:
-        # Default: Hormozi Pop / Boxed (active word highlight with scale pop)
+        # Default: Pop / Boxed (active word highlight with scale pop)
         pop_x = scale_pop_pct
         pop_y = scale_pop_pct
         for chunk in chunks:
@@ -419,15 +475,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 if w_end <= w_start:
                     w_end = w_start + 0.15
 
-                tokens = []
-                for idx, w in enumerate(chunk):
-                    w_text = clean_word_text(w.get("word", ""))
-                    if idx == active_idx:
-                        tokens.append(f"{{\\c{highlight_color}&\\fscx{pop_x}\\fscy{pop_y}}}{w_text}{{\\r}}")
-                    else:
-                        tokens.append(w_text)
-
-                line_text = " ".join(tokens)
+                active_tags = f"\\c{highlight_color}&\\fscx{pop_x}\\fscy{pop_y}"
+                line_text = render_role_line(chunk, active_idx=active_idx, active_tags=active_tags)
                 events.append(
                     f"Dialogue: 0,{format_ass_time(w_start)},{format_ass_time(w_end)},Default,,0,0,0,,{line_text}"
                 )

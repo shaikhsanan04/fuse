@@ -16,8 +16,8 @@ export default function TranscriptionConfig({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Language Selection */}
         <div>
-          <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-2">
-            <Languages className="w-3.5 h-3.5" />
+          <label className="flex items-center gap-2 text-xs font-medium text-zinc-300 mb-2">
+            <Languages className="w-3.5 h-3.5 text-zinc-400" />
             <span>Spoken Language</span>
           </label>
           <select
@@ -28,19 +28,19 @@ export default function TranscriptionConfig({
           >
             <option value="auto">Auto Detect Language</option>
             <option value="en">English</option>
-            <option value="hi">Hindi (Devanagari script)</option>
-            <option value="hinglish">Hinglish (Hindi in Roman script)</option>
+            <option value="hi">Hindi (Devanagari)</option>
+            <option value="hinglish">Hinglish (Hindi in English letters)</option>
           </select>
-          <p className="text-[11px] text-zinc-500 mt-1">
-            {language === 'hinglish' ? 'Biased towards Roman script (e.g. "Yaar aaj hum...")' : 'Detected automatically or forced'}
+          <p className="text-[11px] text-zinc-500 mt-1.5">
+            {language === 'hinglish' ? 'Transcribes Hindi speech using English (Latin) letters' : 'Automatically detected from speech or set manually'}
           </p>
         </div>
 
         {/* Model Selection */}
         <div>
-          <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-2">
-            <Cpu className="w-3.5 h-3.5" />
-            <span>Whisper AI Model</span>
+          <label className="flex items-center gap-2 text-xs font-medium text-zinc-300 mb-2">
+            <Cpu className="w-3.5 h-3.5 text-zinc-400" />
+            <span>Transcription Quality</span>
           </label>
           <select
             value={model}
@@ -48,15 +48,15 @@ export default function TranscriptionConfig({
             disabled={isTranscribing}
             className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg px-3 py-2.5 text-sm text-zinc-200 outline-none transition-all cursor-pointer"
           >
-            <option value="tiny">tiny (Ultra fast, lower accuracy)</option>
-            <option value="base">base (Fast, good for clean audio)</option>
-            <option value="small">small (Recommended: accurate & CPU-friendly)</option>
-            <option value="medium">medium (High accuracy, slower on CPU)</option>
-            <option value="large-v3-turbo">large-v3-turbo (Turbo large)</option>
-            <option value="large-v3">large-v3 (Maximum precision)</option>
+            <option value="tiny">Fast (Quick draft)</option>
+            <option value="base">Standard (Good for clear audio)</option>
+            <option value="small">Balanced (Recommended: High accuracy)</option>
+            <option value="medium">High Precision (Deep accuracy)</option>
+            <option value="large-v3-turbo">Studio Quality (Turbo)</option>
+            <option value="large-v3">Studio Master (Maximum precision)</option>
           </select>
-          <p className="text-[11px] text-zinc-500 mt-1">
-            Runs locally on CPU with int8 quantization (zero cloud)
+          <p className="text-[11px] text-zinc-500 mt-1.5">
+            Runs 100% offline and private on your machine
           </p>
         </div>
       </div>
@@ -64,8 +64,8 @@ export default function TranscriptionConfig({
       {/* Progress display */}
       {isTranscribing && (
         <div className="mb-6 space-y-2">
-          <div className="flex items-center justify-between text-xs font-mono">
-            <span className="text-zinc-400">{progressMessage || 'Processing...'}</span>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-zinc-400">{progressMessage || 'Processing audio...'}</span>
             <span className="text-white font-medium">{progress.toFixed(0)}%</span>
           </div>
           <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/60">
@@ -86,12 +86,12 @@ export default function TranscriptionConfig({
         {isTranscribing ? (
           <>
             <div className="w-4 h-4 border-2 border-zinc-400 border-t-zinc-900 rounded-full animate-spin" />
-            <span>Transcribing with Word Timestamps...</span>
+            <span>Generating captions...</span>
           </>
         ) : (
           <>
             <Play className="w-4 h-4 fill-black" />
-            <span>Generate Subtitles</span>
+            <span>Generate Captions</span>
           </>
         )}
       </button>

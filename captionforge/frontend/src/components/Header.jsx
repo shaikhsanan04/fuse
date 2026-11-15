@@ -9,21 +9,16 @@ export default function Header({ status, onReset, activeJob }) {
           <Sparkles className="w-4 h-4 text-white" />
         </div>
         <div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm tracking-tight text-white">CaptionForge</span>
-            <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-              Local AI
-            </span>
-          </div>
+          <span className="font-semibold text-base tracking-tight text-white">Fuse</span>
         </div>
       </div>
 
       <div className="flex items-center gap-4">
         {status && (
-          <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
-            <span className={`w-2 h-2 rounded-full ${
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <span className={`w-1.5 h-1.5 rounded-full ${
               status.includes('fail') || status.includes('error') ? 'bg-red-500' :
-              status.includes('transcrib') || status.includes('render') ? 'bg-blue-400 animate-pulse' :
+              status.includes('Transcrib') || status.includes('Render') ? 'bg-blue-400' :
               'bg-emerald-400'
             }`} />
             <span>{status}</span>
@@ -33,7 +28,7 @@ export default function Header({ status, onReset, activeJob }) {
         {activeJob && (
           <button
             onClick={onReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>New Video</span>

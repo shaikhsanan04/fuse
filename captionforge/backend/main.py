@@ -153,17 +153,49 @@ def get_styles():
 
 @app.get("/api/fonts")
 def get_fonts():
-    """List bundled fonts available for ASS burn-in and JASSUB preview."""
+    """List bundled static fonts available for ASS burn-in and JASSUB preview."""
     fonts = []
     if FONTS_DIR.exists():
-        for f in FONTS_DIR.glob("*.ttf"):
-            # Clean display name
-            display_name = f.stem.replace("-Variable", "").replace("-Regular", "").replace("-Bold", " Bold")
-            family = f.stem.split("-")[0]
-            if family == "NotoSansDevanagari":
+        for f in sorted(FONTS_DIR.glob("*.ttf")):
+            stem = f.stem
+            if stem.startswith("Montserrat-"):
+                family = "Montserrat"
+                variant = stem.split("-")[1]
+                display_name = f"Montserrat {variant}"
+            elif stem.startswith("Inter-"):
+                family = "Inter"
+                variant = stem.split("-")[1]
+                display_name = f"Inter {variant}"
+            elif stem.startswith("PlayfairDisplay-"):
+                family = "Playfair Display"
+                variant = stem.split("-")[1]
+                display_name = f"Playfair Display {variant}"
+            elif stem.startswith("DMSerifDisplay-"):
+                family = "DM Serif Display"
+                variant = stem.split("-")[1]
+                display_name = f"DM Serif Display {variant}"
+            elif stem.startswith("InstrumentSerif-"):
+                family = "Instrument Serif"
+                variant = stem.split("-")[1]
+                display_name = f"Instrument Serif {variant}"
+            elif stem.startswith("NotoSansDevanagari-"):
                 family = "Noto Sans Devanagari"
-            elif family == "BebasNeue":
+                variant = stem.split("-")[1]
+                display_name = f"Noto Sans Devanagari {variant}"
+            elif stem.startswith("Poppins-"):
+                family = "Poppins"
+                variant = stem.split("-")[1]
+                display_name = f"Poppins {variant}"
+            elif stem.startswith("BebasNeue-"):
                 family = "Bebas Neue"
+                display_name = "Bebas Neue"
+            elif stem.startswith("Anton-"):
+                family = "Anton"
+                display_name = "Anton"
+            else:
+                family = stem.split("-")[0]
+                display_name = stem.replace("-", " ")
+
             fonts.append({
                 "filename": f.name,
                 "family": family,
@@ -427,6 +459,9 @@ def get_transcript(job_id: str):
         raise HTTPException(status_code=404, detail="Job not found")
     if not job.transcript:
         raise HTTPException(status_code=400, detail="Transcript not ready")
+    for w in job.transcript.get("words", []):
+        if "emphasis" not in w:
+            w["emphasis"] = "base"
     return job.transcript
 
 
@@ -449,6 +484,16 @@ def update_transcript(job_id: str, req: TranscriptUpdateRequest):
     transcript_path.write_text(json.dumps(job.transcript, indent=2, ensure_ascii=False), encoding="utf-8")
 
     return {"status": "saved", "word_count": len(req.words)}
+
+
+@app.delete("/api/transcript/{job_id}")
+def delete_transcript_route(job_id: str):
+    """Delete the transcript for a job, clearing cached transcript and ASS files."""
+    job = job_manager.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    job_manager.delete_transcript(job_id)
+    return {"status": "deleted", "job_id": job_id}
 
 
 @app.post("/api/ass/{job_id}")
@@ -596,6 +641,17 @@ def download_rendered_video(job_id: str):
 def create_custom_preset(preset_data: Dict[str, Any]):
     """Save a user-customized style preset to workspace/presets."""
     try:
+        saved = save_custom_preset(preset_data)
+        return saved
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/custom-presets/{preset_id}")
+def update_custom_preset(preset_id: str, preset_data: Dict[str, Any]):
+    """Update an existing user-customized style preset."""
+    try:
+        preset_data["id"] = preset_id
         saved = save_custom_preset(preset_data)
         return saved
     except Exception as e:

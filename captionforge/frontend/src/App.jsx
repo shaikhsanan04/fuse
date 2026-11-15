@@ -51,22 +51,48 @@ export default function App() {
   // Style & Layout States
   const [styles, setStyles] = useState([]);
   const [fonts, setFonts] = useState([]);
-  const [selectedStyleId, setSelectedStyleId] = useState('aesthetic_editorial');
+  const [selectedStyleId, setSelectedStyleId] = useState('editorial_mix');
   const [styleConfig, setStyleConfig] = useState({
-    font: 'Montserrat',
-    font_size_pct: 0.058,
+    font: 'Inter',
+    font_size_pct: 0.054,
     primary_color: '#FFFFFF',
-    highlight_color: '#A8D4FF',
+    highlight_color: '#FFD4A8',
     outline_color: '#000000',
-    outline_width_pct: 0.015,
+    outline_width_pct: 0.02,
     shadow_color: '#000000',
-    shadow_depth_pct: 0.045,
-    spacing: -2,
-    blur: 2.5,
+    shadow_depth_pct: 0.04,
+    spacing: -1,
+    blur: 2.0,
     editorial_top_scale: 75,
     editorial_hero_scale: 140,
     uppercase: false,
-    animation_type: 'editorial'
+    animation_type: 'pop',
+    roles: {
+      base: {
+        font: 'Inter',
+        weight: 700,
+        italic: false,
+        uppercase: false,
+        size_mult: 1.0,
+        color: '#FFFFFF'
+      },
+      accent: {
+        font: 'Playfair Display',
+        weight: 400,
+        italic: false,
+        uppercase: false,
+        size_mult: 1.35,
+        color: '#FFD4A8'
+      },
+      soft: {
+        font: 'Instrument Serif',
+        weight: 400,
+        italic: true,
+        uppercase: false,
+        size_mult: 0.88,
+        color: '#D5D5D5'
+      }
+    }
   });
   const [layoutConfig, setLayoutConfig] = useState({
     mode: 'short',
@@ -101,7 +127,13 @@ export default function App() {
   useEffect(() => {
     fetch('/api/styles')
       .then((res) => res.json())
-      .then((data) => setStyles(data))
+      .then((data) => {
+        setStyles(data);
+        const lastPresetId = localStorage.getItem('captionforge_active_preset_id');
+        if (lastPresetId && data.some((s) => s.id === lastPresetId)) {
+          handleSelectPreset(lastPresetId, data);
+        }
+      })
       .catch((err) => console.error('Failed to load styles:', err));
 
     fetch('/api/fonts')
@@ -220,26 +252,60 @@ export default function App() {
   };
 
   // Handle Preset Selection
-  const handleSelectPreset = (presetId) => {
+  const handleSelectPreset = (presetId, stylesList = styles) => {
     setSelectedStyleId(presetId);
-    const preset = styles.find((s) => s.id === presetId);
+    try {
+      localStorage.setItem('captionforge_active_preset_id', presetId);
+    } catch (_) {}
+
+    const list = stylesList && stylesList.length > 0 ? stylesList : styles;
+    const preset = list.find((s) => s.id === presetId);
     if (!preset) return;
 
+    const presetRoles = preset.roles || {};
+    const parsedRoles = {
+      base: {
+        font: presetRoles.base?.font || preset.font || 'Inter',
+        weight: presetRoles.base?.weight ?? 700,
+        italic: Boolean(presetRoles.base?.italic),
+        uppercase: Boolean(presetRoles.base?.uppercase),
+        size_mult: presetRoles.base?.size_mult ?? 1.0,
+        color: assColorToHex(presetRoles.base?.color, assColorToHex(preset.primary_color, '#FFFFFF'))
+      },
+      accent: {
+        font: presetRoles.accent?.font || 'Playfair Display',
+        weight: presetRoles.accent?.weight ?? 400,
+        italic: Boolean(presetRoles.accent?.italic),
+        uppercase: Boolean(presetRoles.accent?.uppercase),
+        size_mult: presetRoles.accent?.size_mult ?? 1.35,
+        color: assColorToHex(presetRoles.accent?.color, assColorToHex(preset.highlight_color, '#FFD4A8'))
+      },
+      soft: {
+        font: presetRoles.soft?.font || 'Instrument Serif',
+        weight: presetRoles.soft?.weight ?? 400,
+        italic: Boolean(presetRoles.soft?.italic ?? true),
+        uppercase: Boolean(presetRoles.soft?.uppercase),
+        size_mult: presetRoles.soft?.size_mult ?? 0.88,
+        color: assColorToHex(presetRoles.soft?.color, '#D5D5D5')
+      }
+    };
+
     setStyleConfig({
-      font: preset.font || 'Montserrat',
-      font_size_pct: preset.font_size_pct || 0.058,
+      font: preset.font || 'Inter',
+      font_size_pct: preset.font_size_pct || 0.054,
       primary_color: assColorToHex(preset.primary_color, '#FFFFFF'),
-      highlight_color: assColorToHex(preset.highlight_color, '#A8D4FF'),
+      highlight_color: assColorToHex(preset.highlight_color, '#FFD4A8'),
       outline_color: assColorToHex(preset.outline_color, '#000000'),
-      outline_width_pct: preset.outline_width_pct !== undefined ? preset.outline_width_pct : 0.015,
+      outline_width_pct: preset.outline_width_pct !== undefined ? preset.outline_width_pct : 0.02,
       shadow_color: assColorToHex(preset.shadow_color, '#000000'),
-      shadow_depth_pct: preset.shadow_depth_pct !== undefined ? preset.shadow_depth_pct : 0.045,
-      spacing: preset.spacing !== undefined ? preset.spacing : -2,
-      blur: preset.blur !== undefined ? preset.blur : 2.5,
+      shadow_depth_pct: preset.shadow_depth_pct !== undefined ? preset.shadow_depth_pct : 0.04,
+      spacing: preset.spacing !== undefined ? preset.spacing : -1,
+      blur: preset.blur !== undefined ? preset.blur : 2.0,
       editorial_top_scale: preset.editorial_top_scale || 75,
       editorial_hero_scale: preset.editorial_hero_scale || 140,
       uppercase: preset.uppercase === true,
-      animation_type: preset.animation_type || 'editorial',
+      animation_type: preset.animation_type || 'pop',
+      roles: parsedRoles
     });
 
     if (preset.grouping) {
@@ -382,15 +448,22 @@ export default function App() {
   };
 
   // Save current style customizations as a reusable preset
-  const handleSaveCustomPreset = async (name) => {
+  const handleSaveCustomPreset = async (presetInput) => {
     try {
-      const presetId = name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now().toString(36);
+      const name = typeof presetInput === 'string' ? presetInput : presetInput.name;
+      const icon = typeof presetInput === 'object' && presetInput.icon ? presetInput.icon : '⭐';
+      const description = typeof presetInput === 'object' && presetInput.description ? presetInput.description : '';
+
+      const presetId = 'custom_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now().toString(36).slice(-4);
       const payload = {
         id: presetId,
         name: name,
-        description: `Custom preset (${styleConfig.font}, ${styleConfig.animation_type})`,
+        icon: icon,
+        description: description || `Custom style (${styleConfig.roles?.base?.font || styleConfig.font} + ${styleConfig.roles?.accent?.font || 'Serif'})`,
         ...styleConfig,
-        grouping: layoutConfig
+        roles: styleConfig.roles,
+        grouping: layoutConfig,
+        is_custom: true
       };
       const res = await fetch('/api/custom-presets', {
         method: 'POST',
@@ -401,9 +474,61 @@ export default function App() {
       showToast(`Saved preset "${name}"!`, 'success');
       const updated = await fetch('/api/styles').then((r) => r.json());
       setStyles(updated);
-      setSelectedStyleId(presetId);
+      handleSelectPreset(presetId, updated);
     } catch (err) {
       showToast(err.message || 'Failed to save preset', 'error');
+    }
+  };
+
+  // Update an existing custom preset with current settings
+  const handleUpdateCustomPreset = async (presetId) => {
+    try {
+      const existing = styles.find((s) => s.id === presetId);
+      if (!existing) return;
+
+      const payload = {
+        ...existing,
+        ...styleConfig,
+        roles: styleConfig.roles,
+        grouping: layoutConfig,
+        is_custom: true
+      };
+
+      const res = await fetch(`/api/custom-presets/${presetId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Failed to update preset');
+
+      showToast(`Updated preset "${existing.name}"!`, 'success');
+      const updated = await fetch('/api/styles').then((r) => r.json());
+      setStyles(updated);
+    } catch (err) {
+      showToast(err.message || 'Failed to update preset', 'error');
+    }
+  };
+
+  // Import a custom preset from JSON file
+  const handleImportCustomPreset = async (presetData) => {
+    try {
+      if (!presetData || !presetData.name) {
+        throw new Error('Invalid preset file: missing name');
+      }
+      const res = await fetch('/api/custom-presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(presetData)
+      });
+      if (!res.ok) throw new Error('Failed to import preset');
+
+      const saved = await res.json();
+      showToast(`Imported preset "${presetData.name}"!`, 'success');
+      const updated = await fetch('/api/styles').then((r) => r.json());
+      setStyles(updated);
+      handleSelectPreset(saved.id || presetData.id, updated);
+    } catch (err) {
+      showToast(err.message || 'Import failed', 'error');
     }
   };
 
@@ -416,10 +541,24 @@ export default function App() {
       const updated = await fetch('/api/styles').then((r) => r.json());
       setStyles(updated);
       if (selectedStyleId === presetId) {
-        handleSelectPreset('aesthetic_editorial');
+        handleSelectPreset('editorial_mix', updated);
       }
     } catch (err) {
       showToast(err.message || 'Failed to delete preset', 'error');
+    }
+  };
+
+  // Delete all transcripts for the current active job
+  const handleDeleteAllTranscripts = async () => {
+    if (!activeJob) return;
+    try {
+      const res = await fetch(`/api/transcript/${activeJob}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete transcript');
+      setTranscript(null);
+      setAssContent('');
+      showToast('Transcript deleted successfully. You can re-transcribe anytime.', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to delete transcript', 'error');
     }
   };
 
@@ -443,25 +582,25 @@ export default function App() {
             : isRendering
             ? 'Rendering video...'
             : transcript
-            ? 'Subtitles ready'
+            ? 'Captions ready'
             : activeJob
             ? 'Video ready'
-            : 'Idle'
+            : ''
         }
         onReset={handleReset}
         activeJob={activeJob}
       />
 
-      <main className="flex-1 flex flex-col p-6 max-w-7xl mx-auto w-full">
+      <main className={`flex-1 flex flex-col ${activeJob && transcript ? 'px-4 py-2.5 max-w-[1600px] h-[calc(100vh-3.5rem)] overflow-hidden' : 'p-6 max-w-7xl'} mx-auto w-full`}>
         {!activeJob ? (
           // Step 1: Upload View
           <div className="flex-1 flex flex-col items-center justify-center py-12">
-            <div className="text-center mb-8 max-w-md">
-              <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
-                Auto Subtitles. Precision ASS.
+            <div className="text-center mb-8 max-w-lg">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-3">
+                Studio-grade captions in seconds.
               </h1>
-              <p className="text-sm text-zinc-400">
-                Word-level timestamps with faster-whisper, modern caption styles, and 1:1 WASM live preview.
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Turn your speech into dynamic, modern video captions. Highlight key phrases, mix typography styles, and export ready for social media.
               </p>
             </div>
             <UploadZone
@@ -471,22 +610,37 @@ export default function App() {
             />
           </div>
         ) : !transcript ? (
-          // Step 2: Configure & Transcribe View
-          <div className="flex-1 flex flex-col items-center justify-center py-6">
+          // Step 2: Configure & Transcribe View (Upload zone is hidden after uploading)
+          <div className="flex-1 flex flex-col items-center justify-center py-6 max-w-2xl mx-auto w-full">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-white mb-1">
-                Configure Transcription
+              <h2 className="text-2xl font-bold text-white mb-1.5">
+                Transcription Settings
               </h2>
               <p className="text-xs text-zinc-400">
-                Choose model precision and audio language before extracting timestamps.
+                Choose your spoken language and accuracy level to generate captions.
               </p>
             </div>
 
-            <UploadZone
-              onFileSelect={handleFileUpload}
-              isUploading={isUploading}
-              metadata={videoMetadata}
-            />
+            {/* Compact Video Summary (Upload Zone is hidden) */}
+            {videoMetadata && (
+              <div className="w-full mb-2 p-3.5 rounded-xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+                  <span className="text-zinc-200 font-medium truncate max-w-xs">{videoMetadata.filename || 'Video Loaded'}</span>
+                </div>
+                <div className="flex items-center gap-3 text-zinc-400 text-xs flex-shrink-0">
+                  <span>{videoMetadata.width} × {videoMetadata.height}</span>
+                  <span>{videoMetadata.duration?.toFixed(1)}s</span>
+                  <button
+                    onClick={handleReset}
+                    className="text-xs text-zinc-400 hover:text-white underline cursor-pointer ml-1"
+                    title="Upload a different video"
+                  >
+                    Change Video
+                  </button>
+                </div>
+              </div>
+            )}
 
             <TranscriptionConfig
               language={language}
@@ -500,10 +654,10 @@ export default function App() {
             />
           </div>
         ) : (
-          // Step 3: Editor Screen (Two Columns: Left Video Player, Right Tabs)
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-7rem)] min-h-[620px]">
-            {/* LEFT COLUMN: Live Preview Player */}
-            <div className="lg:col-span-7 flex flex-col h-full">
+          // Step 3: Editor Screen (Sticky Left Video Player, Scrollable Right Tabs)
+          <div className="flex-1 flex flex-col lg:flex-row gap-5 items-start justify-center h-full max-h-full overflow-hidden">
+            {/* LEFT COLUMN: Sticky Video Player (tightly sized to 9:16 or 16:9) */}
+            <div className="sticky top-0 flex-shrink-0 flex items-center justify-center self-start">
               <VideoPlayerPreview
                 videoUrl={videoUrl}
                 assContent={assContent}
@@ -518,9 +672,9 @@ export default function App() {
             </div>
 
             {/* RIGHT COLUMN: Tab Controls & Export */}
-            <div className="lg:col-span-5 flex flex-col h-full rounded-2xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-md overflow-hidden shadow-2xl">
+            <div className="flex-1 min-w-[360px] max-w-4xl flex flex-col h-full max-h-full rounded-2xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-md overflow-hidden shadow-2xl">
               {/* Tabs Navigation Header */}
-              <div className="h-12 border-b border-zinc-800/80 bg-zinc-900/40 px-3 flex items-center justify-between">
+              <div className="h-11 flex-shrink-0 border-b border-zinc-800/80 bg-zinc-900/40 px-3 flex items-center justify-between">
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setActiveTab('transcript')}
@@ -575,6 +729,7 @@ export default function App() {
                   <TranscriptTab
                     transcript={transcript}
                     onUpdateTranscript={handleUpdateTranscript}
+                    onDeleteAllTranscripts={handleDeleteAllTranscripts}
                     onSeek={(time) => setSeekTime(time)}
                     currentTime={currentTime}
                   />
@@ -587,9 +742,12 @@ export default function App() {
                     onSelectPreset={handleSelectPreset}
                     fonts={fonts}
                     styleConfig={styleConfig}
+                    layoutConfig={layoutConfig}
                     onChangeStyleConfig={setStyleConfig}
                     onSaveCustomPreset={handleSaveCustomPreset}
+                    onUpdateCustomPreset={handleUpdateCustomPreset}
                     onDeleteCustomPreset={handleDeleteCustomPreset}
+                    onImportCustomPreset={handleImportCustomPreset}
                   />
                 )}
 

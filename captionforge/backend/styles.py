@@ -1,5 +1,5 @@
 """
-CaptionForge - Style Presets Definition
+CaptionForge - Style Presets Definition with Multi-Role Typography
 
 Each style preset defines:
 - id: unique identifier
@@ -18,7 +18,8 @@ Each style preset defines:
 - vertical_margin_pct: margin from bottom/top as fraction of video height
 - border_style: 1=outline+shadow, 3=opaque/translucent bounding box
 - uppercase: whether to auto-uppercase words
-- animation_type: 'pop', 'karaoke', 'none', 'neon', 'fade', 'box'
+- animation_type: 'pop', 'karaoke', 'none', 'neon', 'fade', 'box', 'editorial'
+- roles: multi-role typography dictionary with 'base', 'accent', and 'soft'
 - grouping: default word grouping rules (max_words, max_chars, max_pause)
 """
 
@@ -30,6 +31,253 @@ WORKSPACE_PRESETS_DIR = Path(__file__).resolve().parent.parent / "workspace" / "
 WORKSPACE_PRESETS_DIR.mkdir(parents=True, exist_ok=True)
 
 STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
+    # -------------------------------------------------------------------------
+    # NEW MULTI-ROLE TYPOGRAPHY PRESETS
+    # -------------------------------------------------------------------------
+    "editorial_mix": {
+        "id": "editorial_mix",
+        "name": "Editorial Mix",
+        "description": "High-contrast pairing: clean sans-serif base, prominent high-fashion serif accent, and delicate italic soft emphasis.",
+        "font": "Inter",
+        "font_size_pct": 0.054,
+        "bold": True,
+        "italic": False,
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H00FFD4A8",    # Soft Ice Blue
+        "outline_color": "&H40000000",
+        "outline_width_pct": 0.02,
+        "shadow_color": "&HA0000000",
+        "shadow_depth_pct": 0.04,
+        "spacing": -1,
+        "blur": 2.0,
+        "alignment": 2,
+        "vertical_margin_pct": 0.20,
+        "border_style": 1,
+        "uppercase": False,
+        "animation_type": "pop",
+        "roles": {
+            "base": {
+                "font": "Inter",
+                "weight": 700,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.0,
+                "color": "&H00FFFFFF",
+                "outline": "&H40000000",
+                "shadow": "&HA0000000"
+            },
+            "accent": {
+                "font": "Playfair Display",
+                "weight": 400,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.35,
+                "color": "&H00FFD4A8",
+                "outline": "&H40000000",
+                "shadow": "&HA0000000"
+            },
+            "soft": {
+                "font": "Instrument Serif",
+                "weight": 400,
+                "italic": True,
+                "uppercase": False,
+                "size_mult": 0.88,
+                "color": "&H00D5D5D5",
+                "outline": "&H40000000",
+                "shadow": "&HA0000000"
+            }
+        },
+        "grouping": {
+            "mode": "short",
+            "max_words": 4,
+            "max_chars": 26,
+            "max_pause": 0.45
+        }
+    },
+    "soft_minimal": {
+        "id": "soft_minimal",
+        "name": "Soft Minimal",
+        "description": "Whispered luxury aesthetic with light neutral body, warm serif accents, and muted italic nuances.",
+        "font": "Inter",
+        "font_size_pct": 0.048,
+        "bold": False,
+        "italic": False,
+        "primary_color": "&H00F0F0F0",
+        "highlight_color": "&H00FFD7B0",    # Soft Peach / Warm Champagne
+        "outline_color": "&H30000000",
+        "outline_width_pct": 0.015,
+        "shadow_color": "&H80000000",
+        "shadow_depth_pct": 0.035,
+        "spacing": 0,
+        "blur": 1.5,
+        "alignment": 2,
+        "vertical_margin_pct": 0.16,
+        "border_style": 1,
+        "uppercase": False,
+        "animation_type": "none",
+        "roles": {
+            "base": {
+                "font": "Inter",
+                "weight": 400,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.0,
+                "color": "&H00F0F0F0",
+                "outline": "&H30000000",
+                "shadow": "&H80000000"
+            },
+            "accent": {
+                "font": "DM Serif Display",
+                "weight": 400,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.25,
+                "color": "&H00FFD7B0",
+                "outline": "&H30000000",
+                "shadow": "&H80000000"
+            },
+            "soft": {
+                "font": "Inter",
+                "weight": 300,
+                "italic": True,
+                "uppercase": False,
+                "size_mult": 0.85,
+                "color": "&H00A0A0A0",
+                "outline": "&H30000000",
+                "shadow": "&H80000000"
+            }
+        },
+        "grouping": {
+            "mode": "medium",
+            "max_words": 5,
+            "max_chars": 34,
+            "max_pause": 0.5
+        }
+    },
+    "italic_whisper": {
+        "id": "italic_whisper",
+        "name": "Italic Whisper",
+        "description": "Bold modern grotesk body contrasted with expressive cursive serif accents that float off the screen.",
+        "font": "Montserrat",
+        "font_size_pct": 0.052,
+        "bold": True,
+        "italic": False,
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H00B5B5FF",    # Pastel Coral / Rose
+        "outline_color": "&H40000000",
+        "outline_width_pct": 0.02,
+        "shadow_color": "&HA0000000",
+        "shadow_depth_pct": 0.04,
+        "spacing": -1,
+        "blur": 2.0,
+        "alignment": 2,
+        "vertical_margin_pct": 0.18,
+        "border_style": 1,
+        "uppercase": False,
+        "animation_type": "pop",
+        "roles": {
+            "base": {
+                "font": "Montserrat",
+                "weight": 700,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.0,
+                "color": "&H00FFFFFF",
+                "outline": "&H40000000",
+                "shadow": "&HA0000000"
+            },
+            "accent": {
+                "font": "Instrument Serif",
+                "weight": 400,
+                "italic": True,
+                "uppercase": False,
+                "size_mult": 1.40,
+                "color": "&H00B5B5FF",
+                "outline": "&H40000000",
+                "shadow": "&HA0000000"
+            },
+            "soft": {
+                "font": "Playfair Display",
+                "weight": 400,
+                "italic": True,
+                "uppercase": False,
+                "size_mult": 0.85,
+                "color": "&H00CCCCCC",
+                "outline": "&H40000000",
+                "shadow": "&HA0000000"
+            }
+        },
+        "grouping": {
+            "mode": "short",
+            "max_words": 4,
+            "max_chars": 26,
+            "max_pause": 0.45
+        }
+    },
+    "weight_ladder": {
+        "id": "weight_ladder",
+        "name": "Weight Ladder",
+        "description": "Unified neo-grotesque family that steps dramatically from 300 Light to 700 Bold uppercase.",
+        "font": "Inter",
+        "font_size_pct": 0.050,
+        "bold": False,
+        "italic": False,
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H00D5FF00",    # Electric Cyan / Lime
+        "outline_color": "&H00000000",
+        "outline_width_pct": 0.05,
+        "shadow_color": "&H80000000",
+        "shadow_depth_pct": 0.03,
+        "spacing": -1,
+        "blur": 1.0,
+        "alignment": 2,
+        "vertical_margin_pct": 0.18,
+        "border_style": 1,
+        "uppercase": False,
+        "animation_type": "pop",
+        "roles": {
+            "base": {
+                "font": "Inter",
+                "weight": 400,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.0,
+                "color": "&H00FFFFFF",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            },
+            "accent": {
+                "font": "Inter",
+                "weight": 700,
+                "italic": False,
+                "uppercase": True,
+                "size_mult": 1.30,
+                "color": "&H00D5FF00",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            },
+            "soft": {
+                "font": "Inter",
+                "weight": 300,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 0.85,
+                "color": "&H008E8E93",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            }
+        },
+        "grouping": {
+            "mode": "short",
+            "max_words": 3,
+            "max_chars": 22,
+            "max_pause": 0.4
+        }
+    },
+
+    # -------------------------------------------------------------------------
+    # EXISTING PRESETS (Updated with default roles)
+    # -------------------------------------------------------------------------
     "aesthetic_editorial": {
         "id": "aesthetic_editorial",
         "name": "Aesthetic Editorial",
@@ -38,19 +286,51 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
         "font_size_pct": 0.058,
         "bold": True,
         "italic": False,
-        "primary_color": "&H00FFFFFF",      # Solid Pure White
-        "highlight_color": "&H00FFD4A8",    # Soft Ice Blue / Sky Blue (BGR: FF D4 A8 -> #A8D4FF)
-        "outline_color": "&H40000000",      # Razor thin stroke
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H00FFD4A8",    # Soft Ice Blue
+        "outline_color": "&H40000000",
         "outline_width_pct": 0.015,
-        "shadow_color": "&HA0000000",       # Soft deep ambient shadow
+        "shadow_color": "&HA0000000",
         "shadow_depth_pct": 0.045,
-        "spacing": -2,                      # Punchy tight letter tracking
+        "spacing": -2,
         "blur": 2.5,
-        "alignment": 2,                     # Bottom Center
+        "alignment": 2,
         "vertical_margin_pct": 0.22,
         "border_style": 1,
-        "uppercase": False,                 # Natural lowercase / mixed case aesthetic
+        "uppercase": False,
         "animation_type": "editorial",
+        "roles": {
+            "base": {
+                "font": "Montserrat",
+                "weight": 700,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.0,
+                "color": "&H00FFFFFF",
+                "outline": "&H40000000",
+                "shadow": "&HA0000000"
+            },
+            "accent": {
+                "font": "Montserrat",
+                "weight": 900,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.35,
+                "color": "&H00FFD4A8",
+                "outline": "&H40000000",
+                "shadow": "&HA0000000"
+            },
+            "soft": {
+                "font": "Instrument Serif",
+                "weight": 400,
+                "italic": True,
+                "uppercase": False,
+                "size_mult": 0.85,
+                "color": "&H00D0D0D0",
+                "outline": "&H40000000",
+                "shadow": "&HA0000000"
+            }
+        },
         "grouping": {
             "mode": "short",
             "max_words": 4,
@@ -66,18 +346,50 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
         "font_size_pct": 0.055,
         "bold": True,
         "italic": False,
-        "primary_color": "&H00FFFFFF",      # Crisp White
-        "highlight_color": "&H0000D7FF",    # Bright Gold / Yellow (BGR)
-        "outline_color": "&H00000000",      # Pure Black
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H0000D7FF",    # Bright Gold (BGR)
+        "outline_color": "&H00000000",
         "outline_width_pct": 0.085,
-        "shadow_color": "&H80000000",       # 50% translucent black
+        "shadow_color": "&H80000000",
         "shadow_depth_pct": 0.03,
-        "alignment": 2,                     # Bottom Center
-        "vertical_margin_pct": 0.18,        # Safe area above TikTok/Reels captions
+        "alignment": 2,
+        "vertical_margin_pct": 0.18,
         "border_style": 1,
         "uppercase": True,
         "animation_type": "pop",
-        "scale_pop_pct": 112,               # Scale active word to 112%
+        "scale_pop_pct": 112,
+        "roles": {
+            "base": {
+                "font": "Montserrat",
+                "weight": 800,
+                "italic": False,
+                "uppercase": True,
+                "size_mult": 1.0,
+                "color": "&H00FFFFFF",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            },
+            "accent": {
+                "font": "Montserrat",
+                "weight": 900,
+                "italic": False,
+                "uppercase": True,
+                "size_mult": 1.25,
+                "color": "&H0000D7FF",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            },
+            "soft": {
+                "font": "Montserrat",
+                "weight": 700,
+                "italic": False,
+                "uppercase": True,
+                "size_mult": 0.85,
+                "color": "&H00CCCCCC",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            }
+        },
         "grouping": {
             "mode": "short",
             "max_words": 3,
@@ -93,8 +405,8 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
         "font_size_pct": 0.050,
         "bold": True,
         "italic": False,
-        "primary_color": "&H00FFFFFF",      # Base text white
-        "highlight_color": "&H0000FF00",    # Vibrant Neon Green (BGR: 00FF00)
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H0000FF00",    # Vibrant Neon Green
         "outline_color": "&H00000000",
         "outline_width_pct": 0.075,
         "shadow_color": "&H80000000",
@@ -104,6 +416,38 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
         "border_style": 1,
         "uppercase": False,
         "animation_type": "karaoke",
+        "roles": {
+            "base": {
+                "font": "Poppins",
+                "weight": 700,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.0,
+                "color": "&H00FFFFFF",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            },
+            "accent": {
+                "font": "Poppins",
+                "weight": 700,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.20,
+                "color": "&H0000FF00",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            },
+            "soft": {
+                "font": "Poppins",
+                "weight": 400,
+                "italic": True,
+                "uppercase": False,
+                "size_mult": 0.85,
+                "color": "&H00BBBBBB",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            }
+        },
         "grouping": {
             "mode": "medium",
             "max_words": 5,
@@ -120,16 +464,48 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
         "bold": False,
         "italic": False,
         "primary_color": "&H00FFFFFF",
-        "highlight_color": "&H00FFFFFF",    # No color pop
-        "outline_color": "&H99000000",      # Soft outline
+        "highlight_color": "&H00FFFFFF",
+        "outline_color": "&H99000000",
         "outline_width_pct": 0.040,
-        "shadow_color": "&HAA000000",       # Soft shadow
+        "shadow_color": "&HAA000000",
         "shadow_depth_pct": 0.035,
         "alignment": 2,
         "vertical_margin_pct": 0.10,
         "border_style": 1,
         "uppercase": False,
         "animation_type": "none",
+        "roles": {
+            "base": {
+                "font": "Inter",
+                "weight": 400,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.0,
+                "color": "&H00FFFFFF",
+                "outline": "&H99000000",
+                "shadow": "&HAA000000"
+            },
+            "accent": {
+                "font": "Inter",
+                "weight": 700,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.15,
+                "color": "&H00FFFFFF",
+                "outline": "&H99000000",
+                "shadow": "&HAA000000"
+            },
+            "soft": {
+                "font": "Inter",
+                "weight": 300,
+                "italic": True,
+                "uppercase": False,
+                "size_mult": 0.90,
+                "color": "&H00CCCCCC",
+                "outline": "&H99000000",
+                "shadow": "&HAA000000"
+            }
+        },
         "grouping": {
             "mode": "long",
             "max_words": 7,
@@ -141,21 +517,53 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
         "id": "boxed",
         "name": "Boxed",
         "description": "Crisp text rendered over a semi-transparent dark rounded backdrop for 100% legibility on noisy video.",
-        "font": "Roboto",
+        "font": "Montserrat",
         "font_size_pct": 0.048,
         "bold": True,
         "italic": False,
         "primary_color": "&H00FFFFFF",
         "highlight_color": "&H0000FFFF",    # Bright Yellow
-        "outline_color": "&H80000000",      # Background box color (50% black)
+        "outline_color": "&H80000000",
         "outline_width_pct": 0.12,
         "shadow_color": "&H00000000",
         "shadow_depth_pct": 0.0,
         "alignment": 2,
         "vertical_margin_pct": 0.16,
-        "border_style": 3,                  # Opaque bounding box
+        "border_style": 3,
         "uppercase": True,
         "animation_type": "box",
+        "roles": {
+            "base": {
+                "font": "Montserrat",
+                "weight": 700,
+                "italic": False,
+                "uppercase": True,
+                "size_mult": 1.0,
+                "color": "&H00FFFFFF",
+                "outline": "&H80000000",
+                "shadow": "&H00000000"
+            },
+            "accent": {
+                "font": "Montserrat",
+                "weight": 900,
+                "italic": False,
+                "uppercase": True,
+                "size_mult": 1.25,
+                "color": "&H0000FFFF",
+                "outline": "&H80000000",
+                "shadow": "&H00000000"
+            },
+            "soft": {
+                "font": "Montserrat",
+                "weight": 700,
+                "italic": False,
+                "uppercase": True,
+                "size_mult": 0.85,
+                "color": "&H00CCCCCC",
+                "outline": "&H80000000",
+                "shadow": "&H00000000"
+            }
+        },
         "grouping": {
             "mode": "short",
             "max_words": 3,
@@ -167,13 +575,13 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
         "id": "neon_glow",
         "name": "Neon Glow",
         "description": "High-energy cyber aesthetic with intense blurred neon outer glow.",
-        "font": "Anton",
+        "font": "Montserrat",
         "font_size_pct": 0.056,
         "bold": True,
         "italic": False,
         "primary_color": "&H00FFFFFF",
-        "highlight_color": "&H00FFFF00",    # Electric Cyan (BGR: FF FF 00 -> B=FF, G=FF, R=00)
-        "outline_color": "&H00FF00FF",      # Magenta/Purple neon outline (BGR: FF 00 FF)
+        "highlight_color": "&H00FFFF00",    # Electric Cyan (BGR)
+        "outline_color": "&H00FF00FF",      # Magenta/Purple neon outline
         "outline_width_pct": 0.09,
         "shadow_color": "&H00FF00FF",
         "shadow_depth_pct": 0.06,
@@ -182,6 +590,38 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
         "border_style": 1,
         "uppercase": True,
         "animation_type": "neon",
+        "roles": {
+            "base": {
+                "font": "Montserrat",
+                "weight": 800,
+                "italic": False,
+                "uppercase": True,
+                "size_mult": 1.0,
+                "color": "&H00FFFFFF",
+                "outline": "&H00FF00FF",
+                "shadow": "&H00FF00FF"
+            },
+            "accent": {
+                "font": "Montserrat",
+                "weight": 900,
+                "italic": False,
+                "uppercase": True,
+                "size_mult": 1.30,
+                "color": "&H00FFFF00",
+                "outline": "&H00FF00FF",
+                "shadow": "&H00FF00FF"
+            },
+            "soft": {
+                "font": "Montserrat",
+                "weight": 700,
+                "italic": False,
+                "uppercase": True,
+                "size_mult": 0.85,
+                "color": "&H00DDDDDD",
+                "outline": "&H00FF00FF",
+                "shadow": "&H00FF00FF"
+            }
+        },
         "grouping": {
             "mode": "short",
             "max_words": 3,
@@ -208,6 +648,38 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
         "border_style": 1,
         "uppercase": False,
         "animation_type": "fade",
+        "roles": {
+            "base": {
+                "font": "Poppins",
+                "weight": 700,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.0,
+                "color": "&H00FFFFFF",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            },
+            "accent": {
+                "font": "Poppins",
+                "weight": 700,
+                "italic": False,
+                "uppercase": False,
+                "size_mult": 1.25,
+                "color": "&H0033CCFF",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            },
+            "soft": {
+                "font": "Poppins",
+                "weight": 400,
+                "italic": True,
+                "uppercase": False,
+                "size_mult": 0.85,
+                "color": "&H00CCCCCC",
+                "outline": "&H00000000",
+                "shadow": "&H80000000"
+            }
+        },
         "grouping": {
             "mode": "medium",
             "max_words": 4,
@@ -236,6 +708,7 @@ def load_custom_presets() -> Dict[str, Dict[str, Any]]:
 
 def save_custom_preset(preset_data: Dict[str, Any]) -> Dict[str, Any]:
     """Save a user-defined preset to workspace/presets/{id}.json."""
+    WORKSPACE_PRESETS_DIR.mkdir(parents=True, exist_ok=True)
     preset_id = str(preset_data.get("id", "")).strip().lower()
     if not preset_id:
         import uuid
@@ -261,7 +734,7 @@ def get_preset(style_id: str) -> Dict[str, Any]:
     custom = load_custom_presets()
     if style_id in custom:
         return custom[style_id].copy()
-    return STYLE_PRESETS.get(style_id, STYLE_PRESETS["aesthetic_editorial"]).copy()
+    return STYLE_PRESETS.get(style_id, STYLE_PRESETS["editorial_mix"]).copy()
 
 
 def list_presets() -> List[Dict[str, Any]]:

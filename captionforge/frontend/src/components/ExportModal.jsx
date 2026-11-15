@@ -63,7 +63,7 @@ export default function ExportModal({
 
         <h3 className="text-base font-semibold text-white mb-1">Export Captioned Video</h3>
         <p className="text-xs text-zinc-400 mb-6">
-          High quality H.264 burn-in with precise ASS subtitle rendering
+          High-definition video export with your customized captions
         </p>
 
         {isRendering ? (
@@ -81,7 +81,7 @@ export default function ExportModal({
             </div>
 
             <p className="text-[11px] text-zinc-500 text-center">
-              FFmpeg is burning subtitles frame-by-frame using your chosen styling...
+              Rendering video frames and applying caption typography...
             </p>
           </div>
         ) : downloadUrl ? (
@@ -89,15 +89,15 @@ export default function ExportModal({
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
               <div>
-                <div className="text-xs font-medium text-emerald-300">Rendering Complete!</div>
-                <div className="text-[11px] text-zinc-400">Your MP4 is ready with captions burned in.</div>
+                <div className="text-xs font-medium text-emerald-300">Rendering Complete</div>
+                <div className="text-[11px] text-zinc-400">Your captioned video is ready to download.</div>
               </div>
             </div>
 
             <a
               href={downloadUrl}
               download
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium text-sm text-black bg-white hover:bg-zinc-200 transition-all shadow-glow hover:shadow-white/20"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium text-sm text-black bg-white hover:bg-zinc-200 transition-all shadow-glow hover:shadow-white/20 cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Download MP4 Video</span>
@@ -108,17 +108,17 @@ export default function ExportModal({
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={handleDownloadASS}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-300 hover:text-white transition-colors"
+                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-300 hover:text-white transition-colors cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Download .ASS</span>
+                  <span>Subtitles (.ass)</span>
                 </button>
                 <button
                   onClick={handleDownloadSRT}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-300 hover:text-white transition-colors"
+                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-300 hover:text-white transition-colors cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Download .SRT</span>
+                  <span>Captions (.srt)</span>
                 </button>
               </div>
             </div>
