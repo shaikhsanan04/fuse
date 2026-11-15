@@ -1,5 +1,5 @@
-import React from 'react';
-import { Download, Film, FileText, CheckCircle2, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, Film, FileText, CheckCircle2, X, FolderOpen, Play, Save, HardDrive, Loader2 } from 'lucide-react';
 
 export default function ExportModal({
   isOpen,
@@ -10,11 +10,111 @@ export default function ExportModal({
   downloadUrl,
   assContent,
   videoFilename,
-  transcript
+  transcript,
+  jobId
 }) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedInfo, setSavedInfo] = useState(null);
+  const [saveError, setSaveError] = useState(null);
+
   if (!isOpen) return null;
 
-  // Generate SRT from transcript words/segments
+  // Native OS Save As Dialog (prompts user to choose folder and filename)
+  const handleSaveAs = async () => {
+    if (!jobId) {
+      handleBrowserBlobDownload();
+      return;
+    }
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/save-video/${jobId}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.status === 'saved') {
+        setSavedInfo(data);
+      } else if (data.status === 'error') {
+        setSaveError(data.message || 'Failed to save file');
+      }
+    } catch (err) {
+      setSaveError(err.message || 'Failed to connect to backend');
+      handleBrowserBlobDownload();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Instant 1-click Quick Save to Downloads folder
+  const handleQuickSave = async () => {
+    if (!jobId) {
+      handleBrowserBlobDownload();
+      return;
+    }
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/quick-save-video/${jobId}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.status === 'saved') {
+        setSavedInfo(data);
+      } else if (data.status === 'error') {
+        setSaveError(data.message || 'Failed to save to Downloads');
+      }
+    } catch (err) {
+      setSaveError(err.message || 'Failed to connect to backend');
+      handleBrowserBlobDownload();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Highlight file in Windows File Explorer
+  const handleReveal = async () => {
+    if (!savedInfo?.path) return;
+    try {
+      await fetch('/api/reveal-file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: savedInfo.path }),
+      });
+    } catch (err) {
+      console.error('Failed to reveal file:', err);
+    }
+  };
+
+  // Open file with default Windows Media Player
+  const handleOpenFile = async () => {
+    if (!savedInfo?.path) return;
+    try {
+      await fetch('/api/open-file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: savedInfo.path }),
+      });
+    } catch (err) {
+      console.error('Failed to open file:', err);
+    }
+  };
+
+  // Direct Browser Blob Download Fallback
+  const handleBrowserBlobDownload = async () => {
+    if (!downloadUrl) return;
+    try {
+      const res = await fetch(downloadUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${videoFilename?.replace(/\.[^/.]+$/, '') || 'video'}_captioned.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (err) {
+      console.error('Blob download failed', err);
+    }
+  };
+
+  // Subtitle exports
   const handleDownloadSRT = () => {
     if (!transcript || !transcript.segments) return;
     let srtText = '';
@@ -53,16 +153,16 @@ export default function ExportModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-200 transition-colors"
+          className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-200 transition-colors p-1"
         >
           <X className="w-5 h-5" />
         </button>
 
         <h3 className="text-base font-semibold text-white mb-1">Export Captioned Video</h3>
-        <p className="text-xs text-zinc-400 mb-6">
+        <p className="text-xs text-zinc-400 mb-5">
           High-definition video export with your customized captions
         </p>
 
@@ -85,23 +185,86 @@ export default function ExportModal({
             </p>
           </div>
         ) : downloadUrl ? (
-          <div className="space-y-4 py-2">
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
+          <div className="space-y-4 py-1">
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
               <div>
                 <div className="text-xs font-medium text-emerald-300">Rendering Complete</div>
-                <div className="text-[11px] text-zinc-400">Your captioned video is ready to download.</div>
+                <div className="text-[11px] text-zinc-400">Your captioned video has been compiled and is ready to save.</div>
               </div>
             </div>
 
-            <a
-              href={downloadUrl}
-              download
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium text-sm text-black bg-white hover:bg-zinc-200 transition-all shadow-glow hover:shadow-white/20 cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download MP4 Video</span>
-            </a>
+            {/* If video has been saved */}
+            {savedInfo ? (
+              <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-blue-200 truncate">{savedInfo.filename}</div>
+                    <div className="text-[10px] text-zinc-400 truncate font-mono mt-0.5" title={savedInfo.path}>
+                      {savedInfo.path}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={handleOpenFile}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-all shadow-sm cursor-pointer"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Play Video</span>
+                  </button>
+                  <button
+                    onClick={handleReveal}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium transition-colors border border-zinc-700 cursor-pointer"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span>Show in Folder</span>
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {saveError && (
+              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
+                {saveError}
+              </div>
+            )}
+
+            {/* Save Buttons */}
+            <div className="space-y-2">
+              <button
+                onClick={handleSaveAs}
+                disabled={isSaving}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium text-sm text-black bg-white hover:bg-zinc-200 active:scale-[0.99] transition-all shadow-glow hover:shadow-white/20 cursor-pointer disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                <span>Save Captioned Video As...</span>
+              </button>
+
+              <button
+                onClick={handleQuickSave}
+                disabled={isSaving}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-medium text-xs text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <HardDrive className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Quick Save to Downloads Folder</span>
+              </button>
+            </div>
+
+            <div className="text-center pt-1">
+              <button
+                onClick={handleBrowserBlobDownload}
+                className="text-[11px] text-zinc-500 hover:text-zinc-300 underline transition-colors cursor-pointer"
+              >
+                Or download directly via browser
+              </button>
+            </div>
 
             <div className="pt-3 border-t border-zinc-800/80">
               <span className="text-[11px] text-zinc-400 block mb-2">Export Subtitle Files</span>

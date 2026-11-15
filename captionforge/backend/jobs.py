@@ -63,7 +63,39 @@ class JobManager:
         return job
 
     def get_job(self, job_id: str) -> Optional[Job]:
-        return self.jobs.get(job_id)
+        if job_id in self.jobs:
+            return self.jobs[job_id]
+
+        # Check if job exists on disk in workspace
+        job_dir = self.workspace_dir / job_id
+        if job_dir.is_dir():
+            source_videos = list(job_dir.glob("source_*"))
+            source_path = source_videos[0] if source_videos else (job_dir / "source.mp4")
+            metadata = {"filename": source_path.name.replace("source_", "")}
+            
+            job = Job(job_id=job_id, video_path=source_path, metadata=metadata)
+            job.audio_path = job_dir / "audio_16k.wav"
+            job.ass_path = job_dir / "subtitles.ass"
+            job.output_video_path = job_dir / "captioned.mp4"
+            
+            transcript_file = job_dir / "transcript.json"
+            if transcript_file.exists():
+                try:
+                    import json
+                    with open(transcript_file, "r", encoding="utf-8") as f:
+                        job.transcript = json.load(f)
+                except Exception:
+                    pass
+            
+            if job.output_video_path.exists():
+                job.stage = "completed"
+                job.progress = 100.0
+                job.message = "Rendering completed"
+
+            self.jobs[job_id] = job
+            return job
+
+        return None
 
     def update_progress(
         self,

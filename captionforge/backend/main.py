@@ -20,6 +20,7 @@ from typing import Optional, Dict, Any, List
 
 from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -637,6 +638,113 @@ def download_rendered_video(job_id: str):
     )
 
 
+@app.post("/api/save-video/{job_id}")
+def save_rendered_video_native(job_id: str):
+    """
+    Open native OS Save File Dialog and copy the rendered MP4 directly to the user's chosen folder.
+    """
+    import shutil
+    job = job_manager.get_job(job_id)
+    if not job or not job.output_video_path or not job.output_video_path.exists():
+        raise HTTPException(status_code=404, detail="Rendered video not found or not finished yet")
+
+    orig_name = Path(job.metadata.get("filename", "video.mp4")).stem
+    suggested_filename = f"{orig_name}_captioned.mp4"
+
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        
+        # Default to Videos, Downloads, or Desktop
+        default_dir = str(Path.home() / "Videos")
+        if not Path(default_dir).exists():
+            default_dir = str(Path.home() / "Downloads")
+        if not Path(default_dir).exists():
+            default_dir = str(Path.home() / "Desktop")
+
+        save_dest = filedialog.asksaveasfilename(
+            title="Save Captioned Video As",
+            initialdir=default_dir,
+            initialfile=suggested_filename,
+            defaultextension=".mp4",
+            filetypes=[("MP4 Video", "*.mp4"), ("All Files", "*.*")]
+        )
+        root.destroy()
+
+        if save_dest:
+            shutil.copy2(str(job.output_video_path), save_dest)
+            return {"status": "saved", "path": save_dest, "filename": Path(save_dest).name}
+        else:
+            return {"status": "cancelled"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/quick-save-video/{job_id}")
+def quick_save_rendered_video(job_id: str):
+    """
+    Directly copy the rendered MP4 to the user's Downloads folder
+    without needing a file picker dialog, avoiding naming collisions.
+    """
+    import shutil
+    job = job_manager.get_job(job_id)
+    if not job or not job.output_video_path or not job.output_video_path.exists():
+        raise HTTPException(status_code=404, detail="Rendered video not found or not finished yet")
+
+    orig_name = Path(job.metadata.get("filename", "video.mp4")).stem
+    dest_dir = Path.home() / "Downloads"
+    if not dest_dir.exists():
+        dest_dir = Path.home() / "Videos"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    target_path = dest_dir / f"{orig_name}_captioned.mp4"
+    counter = 1
+    while target_path.exists():
+        target_path = dest_dir / f"{orig_name}_captioned_{counter}.mp4"
+        counter += 1
+
+    try:
+        shutil.copy2(str(job.output_video_path), str(target_path))
+        return {
+            "status": "saved",
+            "path": str(target_path),
+            "filename": target_path.name,
+            "directory": str(dest_dir)
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/reveal-file")
+def reveal_file_in_explorer(req: Dict[str, str]):
+    """Highlight a saved file in Windows File Explorer."""
+    path_str = req.get("path")
+    if path_str and Path(path_str).exists():
+        try:
+            subprocess.run(["explorer", f"/select,{Path(path_str).resolve()}"])
+            return {"status": "ok"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+    return {"status": "not_found"}
+
+
+@app.post("/api/open-file")
+def open_file_default_app(req: Dict[str, str]):
+    """Open a file with its default Windows application (e.g. Media Player)."""
+    path_str = req.get("path")
+    if path_str and Path(path_str).exists():
+        try:
+            os.startfile(str(Path(path_str).resolve()))
+            return {"status": "ok"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+    return {"status": "not_found"}
+
+
 @app.post("/api/custom-presets")
 def create_custom_preset(preset_data: Dict[str, Any]):
     """Save a user-customized style preset to workspace/presets."""
@@ -723,6 +831,15 @@ def export_srt_file(job_id: str):
         media_type="text/plain",
         filename=f"{job_id}.srt"
     )
+
+
+# -----------------------------------------------------------------------------
+# Static Frontend Mount (For Desktop App & Production)
+# -----------------------------------------------------------------------------
+
+DIST_DIR = PROJECT_ROOT / "frontend" / "dist"
+if DIST_DIR.exists() and (DIST_DIR / "index.html").exists():
+    app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="frontend")
 
 
 # -----------------------------------------------------------------------------

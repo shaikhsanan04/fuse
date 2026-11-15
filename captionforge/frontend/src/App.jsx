@@ -776,6 +776,7 @@ export default function App() {
         assContent={assContent}
         videoFilename={videoMetadata?.filename}
         transcript={transcript}
+        jobId={activeJob}
       />
 
       {/* Floating Toast Notification */}
