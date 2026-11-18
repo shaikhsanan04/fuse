@@ -323,6 +323,7 @@ export default function App() {
 
   // Debounced ASS Generation for Live JASSUB Preview
   const debounceTimerRef = useRef(null);
+  const saveTranscriptTimerRef = useRef(null);
 
   useEffect(() => {
     if (!activeJob || !transcript || !transcript.words || transcript.words.length === 0) return;
@@ -341,6 +342,7 @@ export default function App() {
             vertical_margin_pct: layoutConfig.vertical_margin_pct,
           },
           grouping: layoutConfig,
+          words: transcript.words,
         };
 
         const res = await fetch(`/api/ass/${activeJob}`, {
@@ -366,27 +368,51 @@ export default function App() {
   }, [activeJob, transcript, selectedStyleId, styleConfig, layoutConfig]);
 
   // Handle Transcript Updates (edits, splits, merges)
-  const handleUpdateTranscript = async (newTranscript) => {
+  const handleUpdateTranscript = (newTranscript) => {
     setTranscript(newTranscript);
     if (!activeJob) return;
 
-    try {
-      await fetch(`/api/transcript/${activeJob}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          words: newTranscript.words,
-          segments: newTranscript.segments,
-        }),
-      });
-    } catch (err) {
-      console.error('Failed to persist transcript edit:', err);
+    if (saveTranscriptTimerRef.current) {
+      clearTimeout(saveTranscriptTimerRef.current);
     }
+
+    saveTranscriptTimerRef.current = setTimeout(async () => {
+      try {
+        await fetch(`/api/transcript/${activeJob}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            words: newTranscript.words,
+            segments: newTranscript.segments,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to persist transcript edit:', err);
+      }
+    }, 250);
   };
 
   // Handle Video Rendering & Export
   const handleStartRender = async () => {
     if (!activeJob || !transcript) return;
+
+    // Flush any pending transcript save before rendering
+    if (saveTranscriptTimerRef.current) {
+      clearTimeout(saveTranscriptTimerRef.current);
+      try {
+        await fetch(`/api/transcript/${activeJob}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            words: transcript.words,
+            segments: transcript.segments,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to flush transcript save before render:', err);
+      }
+    }
+
     setIsExportModalOpen(true);
     setIsRendering(true);
     setRenderProgress(0);
@@ -551,6 +577,9 @@ export default function App() {
 
   // Delete all transcripts for the current active job
   const handleDeleteAllTranscripts = async () => {
+    if (saveTranscriptTimerRef.current) {
+      clearTimeout(saveTranscriptTimerRef.current);
+    }
     if (!activeJob) return;
     try {
       const res = await fetch(`/api/transcript/${activeJob}`, { method: 'DELETE' });

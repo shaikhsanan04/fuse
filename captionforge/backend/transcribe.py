@@ -40,9 +40,28 @@ def contains_devanagari(text: str) -> bool:
 
 
 def transliterate_to_roman(text: str) -> str:
-    """Transliterate Devanagari text to Roman script using ITRANS."""
+    """Transliterate Devanagari text to natural Roman script with Hindi schwa handling."""
     if sanscript is not None and contains_devanagari(text):
-        return sanscript.transliterate(text, sanscript.DEVANAGARI, sanscript.ITRANS)
+        t = sanscript.transliterate(text, sanscript.DEVANAGARI, sanscript.ITRANS)
+        t = t.replace("|", ".").replace("~", "")
+        words = []
+        for w in t.split():
+            cleaned = (
+                w.replace("IM", "i")
+                .replace("M", "n")
+                .replace("A", "a")
+                .replace("I", "i")
+                .replace("U", "u")
+                .replace(".D", "d")
+                .replace(".t", "t")
+                .replace(".n", "n")
+                .replace("Sh", "sh")
+            )
+            # Hindi schwa deletion for trailing consonants in multi-letter words (e.g. eka -> ek, udhara -> udhar)
+            if len(cleaned) > 2 and cleaned.endswith("a") and not cleaned.endswith(("aa", "ya", "ha", "la", "va", "na")):
+                cleaned = cleaned[:-1]
+            words.append(cleaned)
+        return " ".join(words)
     return text
 
 
@@ -106,7 +125,9 @@ def transcribe_video_audio(
     if language == "hinglish":
         transcribe_kwargs["language"] = "hi"
         transcribe_kwargs["initial_prompt"] = (
-            "Yaar aaj hum kuch naya try karenge. Video mein captions Hinglish Roman script mein aayenge."
+            "Hum Hinglish mein baat kar rahe hain. Video mein captions aur subtitles Hinglish Roman script mein aayenge. "
+            "Like: Bhai, can you borrow me your pen ka koi matlab nahi banta. Hindi mein udhar ek hi hai, English mein borrow aur lend. "
+            "Comment mein likho aur follow karo."
         )
     elif language != "auto":
         transcribe_kwargs["language"] = language
@@ -135,6 +156,12 @@ def transcribe_video_audio(
         if seg.words:
             for w in seg.words:
                 w_text = w.word.strip()
+                if not w_text:
+                    continue
+                # Skip zero-probability silence hallucination tokens
+                if w.probability == 0.0 and len(w_text) > 2 and not w_text.isalnum():
+                    continue
+
                 if language == "hinglish" and contains_devanagari(w_text):
                     w_text = transliterate_to_roman(w_text)
 

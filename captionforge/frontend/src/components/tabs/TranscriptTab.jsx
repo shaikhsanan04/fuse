@@ -14,17 +14,28 @@ export default function TranscriptTab({
 
   const round3 = (num) => Math.round(num * 1000) / 1000;
 
+  const matchesSegment = (s, i, segId, segIdx) => {
+    if (segId != null && s?.id != null) {
+      return s.id === segId || String(s.id) === String(segId);
+    }
+    return i === segIdx;
+  };
+
   const formatSec = (s) => {
     const m = Math.floor(s / 60);
     const sec = (s % 60).toFixed(1);
     return `${m}:${sec < 10 ? '0' : ''}${sec}`;
   };
 
-  // Helper to parse markdown-style *word* or _word_ markers
+  // Helper to parse markdown-style *word* or _word_ markers (with punctuation support)
   const parseToken = (tok) => {
     let text = tok.trim();
     let emphasis = null;
-    if (text.startsWith('*') && text.endsWith('*') && text.length > 2) {
+    const match = text.match(/^(\*|_)(.+?)\1([.,!?;:]*)$/);
+    if (match) {
+      emphasis = match[1] === '*' ? 'accent' : 'soft';
+      text = match[2] + match[3];
+    } else if (text.startsWith('*') && text.endsWith('*') && text.length > 2) {
       text = text.slice(1, -1);
       emphasis = 'accent';
     } else if (text.startsWith('_') && text.endsWith('_') && text.length > 2) {
@@ -34,64 +45,90 @@ export default function TranscriptTab({
     return { word: text, emphasis };
   };
 
-  // Handle direct text edit of a segment
-  const handleSegmentTextChange = (segId, newText) => {
-    const updatedSegments = segments.map((seg) => {
-      if (seg.id === segId) {
-        return { ...seg, text: newText };
+  // Handle direct text edit of a segment: immediately syncs the text pills!
+  const handleSegmentTextChange = (segId, newText, segIdx) => {
+    const seg = segments.find((s, i) => matchesSegment(s, i, segId, segIdx)) || segments[segIdx];
+    if (!seg) return;
+
+    const splitTokens = newText.trim().split(/\s+/).filter(Boolean);
+    const prevWords = seg.words || [];
+    const segStart = typeof seg.start === 'number' ? seg.start : 0;
+    const segEnd = typeof seg.end === 'number' ? seg.end : (segStart + 1.0);
+    const duration = Math.max(0.2, segEnd - segStart);
+    const sameLength = splitTokens.length === prevWords.length;
+    const tokenDuration = duration / Math.max(1, splitTokens.length);
+
+    const replacementWords = splitTokens.map((tok, idx) => {
+      const parsed = parseToken(tok);
+      const existingWord = sameLength
+        ? prevWords[idx]
+        : prevWords.find((w) => (w.word || '').toLowerCase() === parsed.word.toLowerCase()) || prevWords[idx];
+
+      const emp = parsed.emphasis || (existingWord && existingWord.emphasis) || 'base';
+
+      let start = (sameLength && existingWord?.start != null)
+        ? existingWord.start
+        : round3(segStart + idx * tokenDuration);
+
+      let end = (sameLength && existingWord?.end != null)
+        ? existingWord.end
+        : (idx === splitTokens.length - 1 ? round3(segEnd) : round3(segStart + (idx + 1) * tokenDuration));
+
+      if (end <= start) {
+        end = round3(start + 0.1);
       }
-      return seg;
+
+      return {
+        word: parsed.word,
+        start,
+        end,
+        probability: existingWord?.probability ?? 0.95,
+        emphasis: emp
+      };
     });
 
-    const newWords = [...words];
-    const seg = segments.find((s) => s.id === segId);
-    if (seg && seg.words && seg.words.length > 0) {
-      const splitTokens = newText.trim().split(/\s+/).filter(Boolean);
-      const segStart = seg.start;
-      const segEnd = seg.end;
-      const duration = Math.max(0.2, segEnd - segStart);
-      const tokenDuration = duration / Math.max(1, splitTokens.length);
-
-      const firstWordStart = seg.words[0].start;
-      const startIndex = newWords.findIndex((w) => Math.abs(w.start - firstWordStart) < 0.05);
-
-      if (startIndex !== -1) {
-        const replacementWords = splitTokens.map((tok, idx) => {
-          const parsed = parseToken(tok);
-          const existingWord = seg.words && seg.words[idx];
-          const emp = parsed.emphasis || (existingWord && existingWord.emphasis) || 'base';
-          return {
-            word: parsed.word,
-            start: round3(segStart + idx * tokenDuration),
-            end: round3(segStart + (idx + 1) * tokenDuration),
-            probability: 0.95,
-            emphasis: emp
-          };
-        });
-        newWords.splice(startIndex, seg.words.length, ...replacementWords);
+    const updatedSegments = segments.map((s, i) => {
+      if (matchesSegment(s, i, segId, segIdx)) {
+        return {
+          ...s,
+          text: newText,
+          words: replacementWords
+        };
       }
-    }
+      return s;
+    });
+
+    const newWords = updatedSegments.flatMap((s) => s.words || []);
 
     onUpdateTranscript({ segments: updatedSegments, words: newWords });
   };
 
   // On blur of textarea, strip * and _ from segment text while keeping emphasis
-  const handleSegmentBlur = (segId) => {
-    const seg = segments.find((s) => s.id === segId);
+  const handleSegmentBlur = (segId, segIdx) => {
+    const seg = segments.find((s, i) => matchesSegment(s, i, segId, segIdx)) || segments[segIdx];
     if (!seg) return;
 
-    const cleanedText = seg.text
+    const cleanedText = (seg.text || '')
       .split(/\s+/)
       .map((tok) => {
-        if (tok.startsWith('*') && tok.endsWith('*') && tok.length > 2) return tok.slice(1, -1);
-        if (tok.startsWith('_') && tok.endsWith('_') && tok.length > 2) return tok.slice(1, -1);
-        return tok;
+        let clean = tok;
+        const match = clean.match(/^(\*|_)(.+?)\1([.,!?;:]*)$/);
+        if (match) return match[2] + match[3];
+        if (clean.startsWith('*') && clean.endsWith('*') && clean.length > 2) return clean.slice(1, -1);
+        if (clean.startsWith('_') && clean.endsWith('_') && clean.length > 2) return clean.slice(1, -1);
+        return clean;
       })
       .join(' ');
 
     if (cleanedText !== seg.text) {
-      const updatedSegments = segments.map((s) => (s.id === segId ? { ...s, text: cleanedText } : s));
-      onUpdateTranscript({ segments: updatedSegments, words });
+      const updatedSegments = segments.map((s, i) => {
+        if (matchesSegment(s, i, segId, segIdx)) {
+          return { ...s, text: cleanedText };
+        }
+        return s;
+      });
+      const newWords = updatedSegments.flatMap((s) => s.words || []);
+      onUpdateTranscript({ segments: updatedSegments, words: newWords });
     }
   };
 
@@ -101,32 +138,28 @@ export default function TranscriptTab({
 
     // If Alt-click or Ctrl-click, seek to word
     if (e.altKey || e.ctrlKey) {
-      onSeek(seg.words[wIdx].start);
+      if (seg.words && seg.words[wIdx]) {
+        onSeek(seg.words[wIdx].start);
+      }
       return;
     }
 
     const currentEmp = seg.words[wIdx]?.emphasis || 'base';
     const nextEmp = currentEmp === 'base' ? 'accent' : currentEmp === 'accent' ? 'soft' : 'base';
 
-    const targetWord = seg.words[wIdx];
-
     // Update in segment
-    const updatedSegments = segments.map((s) => {
-      if (s.id === seg.id) {
-        const newSegWords = [...s.words];
-        newSegWords[wIdx] = { ...newSegWords[wIdx], emphasis: nextEmp };
+    const updatedSegments = segments.map((s, i) => {
+      if (s === seg || matchesSegment(s, i, seg.id, segments.indexOf(seg))) {
+        const newSegWords = [...(s.words || [])];
+        if (newSegWords[wIdx]) {
+          newSegWords[wIdx] = { ...newSegWords[wIdx], emphasis: nextEmp };
+        }
         return { ...s, words: newSegWords };
       }
       return s;
     });
 
-    // Update in global words array
-    const updatedWords = words.map((w) => {
-      if (Math.abs(w.start - targetWord.start) < 0.05 && w.word.trim() === targetWord.word.trim()) {
-        return { ...w, emphasis: nextEmp };
-      }
-      return w;
-    });
+    const updatedWords = updatedSegments.flatMap((s) => s.words || []);
 
     onUpdateTranscript({ segments: updatedSegments, words: updatedWords });
   };
@@ -137,10 +170,10 @@ export default function TranscriptTab({
     const targetWord = seg.words[wIdx];
     if (!targetWord) return;
 
-    // Filter out the word from segment
-    const updatedSegments = segments.map((s) => {
-      if (s.id === seg.id) {
-        const newSegWords = s.words.filter((_, idx) => idx !== wIdx);
+    // Filter out the word from segment and keep text in sync
+    const updatedSegments = segments.map((s, i) => {
+      if (s === seg || matchesSegment(s, i, seg.id, segments.indexOf(seg))) {
+        const newSegWords = (s.words || []).filter((_, idx) => idx !== wIdx);
         return {
           ...s,
           words: newSegWords,
@@ -150,11 +183,7 @@ export default function TranscriptTab({
       return s;
     });
 
-    // Filter out from global words array
-    const updatedWords = words.filter((w) => {
-      const isMatch = Math.abs(w.start - targetWord.start) < 0.05 && w.word.trim() === targetWord.word.trim();
-      return !isMatch;
-    });
+    const updatedWords = updatedSegments.flatMap((s) => s.words || []);
 
     onUpdateTranscript({ segments: updatedSegments, words: updatedWords });
   };
@@ -165,13 +194,7 @@ export default function TranscriptTab({
     if (!seg) return;
 
     const newSegments = segments.filter((_, i) => i !== index);
-
-    // Remove words corresponding to this segment
-    const segStart = seg.start;
-    const segEnd = seg.end;
-    const newWords = words.filter((w) => {
-      return !(w.start >= segStart - 0.05 && w.end <= segEnd + 0.05);
-    });
+    const newWords = newSegments.flatMap((s) => s.words || []);
 
     onUpdateTranscript({ segments: newSegments, words: newWords });
   };
@@ -261,7 +284,8 @@ export default function TranscriptTab({
 
     const newSegments = [...segments];
     newSegments.splice(index, 2, merged);
-    onUpdateTranscript({ segments: newSegments, words });
+    const newWords = newSegments.flatMap((s) => s.words || []);
+    onUpdateTranscript({ segments: newSegments, words: newWords });
   };
 
   // Split segment in half
@@ -292,7 +316,8 @@ export default function TranscriptTab({
 
     const newSegments = [...segments];
     newSegments.splice(index, 1, seg1, seg2);
-    onUpdateTranscript({ segments: newSegments, words });
+    const newWords = newSegments.flatMap((s) => s.words || []);
+    onUpdateTranscript({ segments: newSegments, words: newWords });
   };
 
   return (
@@ -423,8 +448,8 @@ export default function TranscriptTab({
                 {/* Editable Text Area */}
                 <textarea
                   value={seg.text}
-                  onChange={(e) => handleSegmentTextChange(seg.id, e.target.value)}
-                  onBlur={() => handleSegmentBlur(seg.id)}
+                  onChange={(e) => handleSegmentTextChange(seg.id, e.target.value, idx)}
+                  onBlur={() => handleSegmentBlur(seg.id, idx)}
                   rows={2}
                   className="w-full bg-zinc-950 border border-zinc-800/80 focus:border-zinc-600 rounded-lg p-2 text-xs text-zinc-200 resize-none outline-none font-sans leading-relaxed"
                   placeholder="Edit caption text... (type *word* for Accent, _word_ for Soft)"

@@ -57,6 +57,19 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_no_cache_headers(request: Request, call_next):
+    """
+    Prevent EdgeChromium / WebView2 from aggressively caching index.html
+    or static assets in the local desktop app.
+    """
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
 # -----------------------------------------------------------------------------
 # Pydantic Request Models
 # -----------------------------------------------------------------------------
@@ -72,6 +85,7 @@ class AssRequest(BaseModel):
     font_size: Optional[int] = Field(default=None, description="Explicit font size in px")
     overrides: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Style property overrides")
     grouping: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Word grouping parameters")
+    words: Optional[List[Dict[str, Any]]] = Field(default=None, description="Optional word tokens to use directly")
 
 
 class TranscriptUpdateRequest(BaseModel):
@@ -511,15 +525,20 @@ def generate_ass_route(job_id: str, req: AssRequest):
     job = job_manager.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    if not job.transcript or not job.transcript.get("words"):
+
+    words = req.words if req.words is not None else (job.transcript.get("words") if job.transcript else [])
+    if not words:
         raise HTTPException(status_code=400, detail="No transcript available to generate subtitles")
+
+    if req.words is not None and job.transcript:
+        job.transcript["words"] = req.words
 
     meta = job.metadata
     width = meta.get("width", 1080)
     height = meta.get("height", 1920)
 
     ass_text = generate_ass_content(
-        words=job.transcript["words"],
+        words=words,
         video_width=width,
         video_height=height,
         style_id=req.style_id,
